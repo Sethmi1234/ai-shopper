@@ -41,21 +41,36 @@ function FilterSelect<T extends string>({
 }
 
 export default function ProductGrid() {
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const [sort, setSort] = useState<SortOption>("ai-match");
   const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
 
-  // Fetch all products so filters can cover the full catalog
-  const { data, isLoading, error } = useProducts(200);
+  const {
+    data,
+    isLoading,
+    error,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+  } = useProducts(PAGE_SIZE);
+
+  const products = useMemo(
+    () => (data?.pages as any[])?.flatMap((page) => page.products) ?? [],
+    [data]
+  );
+
+  const totalProducts = useMemo(
+    () => (data?.pages as any[])?.[0]?.total ?? 0,
+    [data]
+  );
 
   const processed = useMemo(() => {
-    if (!data?.products) return [];
+    if (!products.length) return [];
 
-    let products = [...data.products];
+    let filtered = [...products];
 
     // Price filter
-    products = products.filter((p: any) => {
+    filtered = filtered.filter((p: any) => {
       const price = Number(p.price);
       if (priceFilter === "under-50") return price < 50;
       if (priceFilter === "50-150") return price >= 50 && price <= 150;
@@ -65,7 +80,7 @@ export default function ProductGrid() {
     });
 
     // Rating filter
-    products = products.filter((p: any) => {
+    filtered = filtered.filter((p: any) => {
       const rating = Number(p.rating);
       if (ratingFilter === "4plus") return rating >= 4;
       if (ratingFilter === "4.5plus") return rating >= 4.5;
@@ -74,20 +89,21 @@ export default function ProductGrid() {
     });
 
     // Sort
-    products.sort((a: any, b: any) => {
+    filtered.sort((a: any, b: any) => {
       if (sort === "price-asc") return Number(a.price) - Number(b.price);
       if (sort === "price-desc") return Number(b.price) - Number(a.price);
       if (sort === "rating-desc") return Number(b.rating) - Number(a.rating);
       return 0; // ai-match = original order
     });
 
-    return products;
-  }, [data, sort, priceFilter, ratingFilter]);
+    return filtered;
+  }, [products, sort, priceFilter, ratingFilter]);
 
-  const visible = processed.slice(0, visibleCount);
-  const hasMore = visibleCount < processed.length;
+  const hasMore = Boolean(hasNextPage && products.length < totalProducts);
 
-  const handleLoadMore = () => setVisibleCount((c) => c + PAGE_SIZE);
+  const handleLoadMore = () => {
+    if (hasNextPage) fetchNextPage();
+  };
 
   const reviewCount = (p: any) =>
     Array.isArray(p.reviews)
@@ -107,7 +123,7 @@ export default function ProductGrid() {
             <FilterSelect<PriceFilter>
               label="Price"
               value={priceFilter}
-              onChange={(v) => { setPriceFilter(v); setVisibleCount(PAGE_SIZE); }}
+              onChange={setPriceFilter}
               options={[
                 { label: "All Prices", value: "all" },
                 { label: "Under $50", value: "under-50" },
@@ -121,7 +137,7 @@ export default function ProductGrid() {
             <FilterSelect<RatingFilter>
               label="Rating"
               value={ratingFilter}
-              onChange={(v) => { setRatingFilter(v); setVisibleCount(PAGE_SIZE); }}
+              onChange={setRatingFilter}
               options={[
                 { label: "All Ratings", value: "all" },
                 { label: "4★ & up", value: "4plus" },
@@ -134,7 +150,7 @@ export default function ProductGrid() {
             <FilterSelect<SortOption>
               label="Sort by"
               value={sort}
-              onChange={(v) => { setSort(v); setVisibleCount(PAGE_SIZE); }}
+              onChange={setSort}
               options={[
                 { label: "Sort by: AI Match", value: "ai-match" },
                 { label: "Price: Low → High", value: "price-asc" },
@@ -167,7 +183,7 @@ export default function ProductGrid() {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          {visible.map((product: any, i: number) => (
+          {processed.map((product: any, i: number) => (
             <div
               key={product.id}
               style={{ animation: `fadeInUp 0.4s ease ${(i % PAGE_SIZE) * 0.07}s both` }}
@@ -191,9 +207,10 @@ export default function ProductGrid() {
         <div className="mt-12 flex justify-center">
           <button
             onClick={handleLoadMore}
-            className="px-8 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
+            disabled={isFetchingNextPage}
+            className="px-8 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
           >
-            Load More Recommendations
+            {isFetchingNextPage ? "Loading more..." : "Load More Recommendations"}
           </button>
         </div>
       )}

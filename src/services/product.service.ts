@@ -1,7 +1,10 @@
 import api from "@/lib/axios";
 
-export const getProducts = async (limit?: number) => {
-  const url = limit && limit > 0 ? `/products?limit=${limit}` : "/products";
+export const getProducts = async (limit?: number, skip?: number) => {
+  const queryParts: string[] = [];
+  if (limit && limit > 0) queryParts.push(`limit=${limit}`);
+  if (skip && skip > 0) queryParts.push(`skip=${skip}`);
+  const url = queryParts.length > 0 ? `/products?${queryParts.join("&")}` : "/products";
   const res = await api.get(url);
   return res.data;
 };
