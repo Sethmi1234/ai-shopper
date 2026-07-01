@@ -17,6 +17,7 @@ import {
   ArrowUpDown,
 } from "lucide-react";
 import { useCategoryProducts } from "@/hooks/useCategoryProducts";
+import { useCategories } from "@/hooks/useCategories";
 
 type SortOption = "default" | "price-asc" | "price-desc" | "rating-desc";
 type PriceFilter = "all" | "under-50" | "50-150" | "150-300" | "over-300";
@@ -33,6 +34,8 @@ export default function CategoryPage() {
   const slug = params?.slug as string;
 
   const { data, isLoading, error } = useCategoryProducts(slug);
+  // Fetch all categories so we can display the real API category name for this slug
+  const { data: allCategories } = useCategories();
 
   const [sort, setSort] = useState<SortOption>("default");
   const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
@@ -40,7 +43,22 @@ export default function CategoryPage() {
   const [showFilters, setShowFilters] = useState(false);
   const [wishlist, setWishlist] = useState<Set<number>>(new Set());
 
-  const categoryName = formatCategoryName(slug || "");
+  // Resolve real category name from API (slug is exact API slug, e.g. "mens-shirts")
+  const categoryName = (() => {
+    if (allCategories && Array.isArray(allCategories)) {
+      const match = allCategories.find((cat: any) => {
+        const s = typeof cat === "string" ? cat : cat.slug || "";
+        return s === slug;
+      });
+      if (match) {
+        return typeof match === "string"
+          ? formatCategoryName(match)
+          : match.name || formatCategoryName(slug || "");
+      }
+    }
+    // fallback: convert slug to readable name
+    return formatCategoryName(slug || "");
+  })();
 
   const products: any[] = useMemo(() => data?.products ?? [], [data]);
 
