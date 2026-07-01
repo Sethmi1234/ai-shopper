@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { ChevronDown, Loader2, Check } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import ProductCard from "../product/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 
@@ -11,48 +11,32 @@ type SortOption = "ai-match" | "price-asc" | "price-desc" | "rating-desc";
 type PriceFilter = "all" | "under-50" | "50-150" | "150-300" | "over-300";
 type RatingFilter = "all" | "4plus" | "4.5plus" | "5";
 
-function Dropdown<T extends string>({
+function FilterSelect<T extends string>({
   label,
-  options,
   value,
+  options,
   onChange,
 }: {
   label: string;
-  options: { label: string; value: T }[];
   value: T;
+  options: { label: string; value: T }[];
   onChange: (v: T) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find((o) => o.value === value);
-
   return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 bg-white transition-colors shadow-sm"
+    <label className="flex flex-col text-sm text-gray-700">
+      <span className="mb-2 text-sm font-medium text-gray-600">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="min-w-[180px] rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
       >
-        {selected?.label ?? label}
-        <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-20 overflow-hidden py-1">
-            {options.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => { onChange(opt.value); setOpen(false); }}
-                className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
-              >
-                {opt.label}
-                {value === opt.value && <Check size={14} className="text-blue-600" />}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </label>
   );
 }
 
@@ -120,7 +104,7 @@ export default function ProductGrid() {
 
         <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0 scrollbar-hide snap-x">
           <div className="shrink-0 snap-start">
-            <Dropdown<PriceFilter>
+            <FilterSelect<PriceFilter>
               label="Price"
               value={priceFilter}
               onChange={(v) => { setPriceFilter(v); setVisibleCount(PAGE_SIZE); }}
@@ -134,7 +118,7 @@ export default function ProductGrid() {
             />
           </div>
           <div className="shrink-0 snap-start">
-            <Dropdown<RatingFilter>
+            <FilterSelect<RatingFilter>
               label="Rating"
               value={ratingFilter}
               onChange={(v) => { setRatingFilter(v); setVisibleCount(PAGE_SIZE); }}
@@ -147,8 +131,8 @@ export default function ProductGrid() {
             />
           </div>
           <div className="shrink-0 snap-start">
-            <Dropdown<SortOption>
-              label="Sort by: AI Match"
+            <FilterSelect<SortOption>
+              label="Sort by"
               value={sort}
               onChange={(v) => { setSort(v); setVisibleCount(PAGE_SIZE); }}
               options={[
