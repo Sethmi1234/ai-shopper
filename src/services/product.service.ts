@@ -1,7 +1,8 @@
 import api from "@/lib/axios";
 
-export const getProducts = async (limit = 4) => {
-  const res = await api.get(`/products?limit=${limit}`);
+export const getProducts = async (limit?: number) => {
+  const url = limit && limit > 0 ? `/products?limit=${limit}` : "/products";
+  const res = await api.get(url);
   return res.data;
 };
 

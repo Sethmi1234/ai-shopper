@@ -5,7 +5,7 @@ import { Loader2 } from "lucide-react";
 import ProductCard from "../product/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 8;
 
 type SortOption = "ai-match" | "price-asc" | "price-desc" | "rating-desc";
 type PriceFilter = "all" | "under-50" | "50-150" | "150-300" | "over-300";
@@ -46,8 +46,8 @@ export default function ProductGrid() {
   const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
 
-  // Fetch a large pool so we can filter/sort client-side
-  const { data, isLoading, error } = useProducts(30);
+  // Fetch all products so filters can cover the full catalog
+  const { data, isLoading, error } = useProducts(200);
 
   const processed = useMemo(() => {
     if (!data?.products) return [];
