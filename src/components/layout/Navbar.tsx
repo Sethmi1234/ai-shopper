@@ -2,11 +2,12 @@
 
 import { Search, Heart, ShoppingCart, User, ShoppingBag, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 
 export default function Navbar() {
   const router = useRouter();
+  const pathname = usePathname();
   const [username, setUsername] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -54,12 +55,18 @@ export default function Navbar() {
 
         {/* Desktop Navigation Links */}
         <div className="hidden md:flex items-center gap-8 font-medium text-gray-600">
-          <Link href="/dashboard" className="text-blue-600 relative">
+          <Link href="/dashboard" className={`relative ${pathname === "/dashboard" ? "text-blue-600" : "hover:text-blue-600 transition-colors"}`}>
             Home
-            <div className="absolute -bottom-2 left-0 w-full h-0.5 bg-blue-600"></div>
+            {pathname === "/dashboard" && <div className="absolute -bottom-2 left-0 w-full h-0.5 bg-blue-600"></div>}
           </Link>
-          <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Categories</Link>
-          <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Products</Link>
+          <Link href="/dashboard/category" className={`relative ${pathname === "/dashboard/category" ? "text-blue-600" : "hover:text-blue-600 transition-colors"}`}>
+            Categories
+            {pathname === "/dashboard/category" && <div className="absolute -bottom-2 left-0 w-full h-0.5 bg-blue-600"></div>}
+          </Link>
+          <Link href="/dashboard/products" className={`relative ${pathname === "/dashboard/products" ? "text-blue-600" : "hover:text-blue-600 transition-colors"}`}>
+            Products
+            {pathname === "/dashboard/products" && <div className="absolute -bottom-2 left-0 w-full h-0.5 bg-blue-600"></div>}
+          </Link>
           <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Deals</Link>
         </div>
 
@@ -141,13 +148,13 @@ export default function Navbar() {
               />
             </div>
 
-            {/* Mobile Navigation Links */}
+        {/* Mobile Navigation Links */}
             <div className="flex flex-col gap-4 font-semibold text-lg text-gray-800 flex-1">
-              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className="text-blue-600">Home</Link>
-              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>Categories</Link>
-              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>Products</Link>
-              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>Deals</Link>
-              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>My Favorites</Link>
+              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className={pathname === "/dashboard" ? "text-blue-600" : ""}>Home</Link>
+              <Link href="/dashboard/category" onClick={() => setIsMenuOpen(false)} className={pathname === "/dashboard/category" ? "text-blue-600" : ""}>Categories</Link>
+              <Link href="/dashboard/products" onClick={() => setIsMenuOpen(false)} className={pathname === "/dashboard/products" ? "text-blue-600" : ""}>Products</Link>
+              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className={pathname === "/dashboard" ? "text-blue-600" : ""}>Deals</Link>
+              <Link href="/dashboard/favorites" onClick={() => setIsMenuOpen(false)} className={pathname === "/dashboard/favorites" ? "text-blue-600" : ""}>My Favorites</Link>
             </div>
 
             {/* Mobile Logout */}
