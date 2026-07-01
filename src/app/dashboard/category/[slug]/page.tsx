@@ -10,23 +10,50 @@ import {
   Star,
   Heart,
   ShoppingCart,
-  SlidersHorizontal,
-  X,
   Sparkles,
   TrendingUp,
-  ArrowUpDown,
 } from "lucide-react";
 import { useCategoryProducts } from "@/hooks/useCategoryProducts";
 import { useCategories } from "@/hooks/useCategories";
-
-type SortOption = "default" | "price-asc" | "price-desc" | "rating-desc";
-type PriceFilter = "all" | "under-50" | "50-150" | "150-300" | "over-300";
 
 function formatCategoryName(slug: string) {
   return slug
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
     .join(" ");
+}
+
+type SortOption = "default" | "price-asc" | "price-desc" | "rating-desc";
+type PriceFilter = "all" | "under-50" | "50-150" | "150-300" | "over-300";
+type RatingFilter = "all" | "4plus" | "4.5plus" | "5";
+
+function FilterSelect<T extends string>({
+  label,
+  value,
+  options,
+  onChange,
+}: {
+  label: string;
+  value: T;
+  options: { label: string; value: T }[];
+  onChange: (v: T) => void;
+}) {
+  return (
+    <label className="flex flex-col text-sm text-gray-700">
+      <span className="mb-1 text-xs font-semibold text-gray-500 uppercase tracking-wider">{label}</span>
+      <select
+        value={value}
+        onChange={(e) => onChange(e.target.value as T)}
+        className="min-w-[160px] rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+      >
+        {options.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {opt.label}
+          </option>
+        ))}
+      </select>
+    </label>
+  );
 }
 
 export default function CategoryPage() {
@@ -39,8 +66,7 @@ export default function CategoryPage() {
 
   const [sort, setSort] = useState<SortOption>("default");
   const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
-  const [minRating, setMinRating] = useState(0);
-  const [showFilters, setShowFilters] = useState(false);
+  const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
   const [wishlist, setWishlist] = useState<Set<number>>(new Set());
 
   // Resolve real category name from API (slug is exact API slug, e.g. "mens-shirts")
@@ -66,7 +92,7 @@ export default function CategoryPage() {
     let filtered = [...products];
 
     // Price filter
-    filtered = filtered.filter((p) => {
+    filtered = filtered.filter((p: any) => {
       const price = Number(p.price);
       if (priceFilter === "under-50") return price < 50;
       if (priceFilter === "50-150") return price >= 50 && price <= 150;
@@ -76,12 +102,16 @@ export default function CategoryPage() {
     });
 
     // Rating filter
-    if (minRating > 0) {
-      filtered = filtered.filter((p) => Number(p.rating) >= minRating);
-    }
+    filtered = filtered.filter((p: any) => {
+      const rating = Number(p.rating);
+      if (ratingFilter === "4plus") return rating >= 4;
+      if (ratingFilter === "4.5plus") return rating >= 4.5;
+      if (ratingFilter === "5") return rating === 5;
+      return true;
+    });
 
     // Sort
-    filtered.sort((a, b) => {
+    filtered.sort((a: any, b: any) => {
       if (sort === "price-asc") return Number(a.price) - Number(b.price);
       if (sort === "price-desc") return Number(b.price) - Number(a.price);
       if (sort === "rating-desc") return Number(b.rating) - Number(a.rating);
@@ -89,7 +119,7 @@ export default function CategoryPage() {
     });
 
     return filtered;
-  }, [products, sort, priceFilter, minRating]);
+  }, [products, sort, priceFilter, ratingFilter]);
 
   const toggleWishlist = (id: number) => {
     setWishlist((prev) => {
@@ -101,12 +131,12 @@ export default function CategoryPage() {
 
   const clearFilters = () => {
     setPriceFilter("all");
-    setMinRating(0);
+    setRatingFilter("all");
     setSort("default");
   };
 
   const hasActiveFilters =
-    priceFilter !== "all" || minRating > 0 || sort !== "default";
+    priceFilter !== "all" || ratingFilter !== "all" || sort !== "default";
 
   return (
     <div className="min-h-screen bg-[#f8f9fc]">
@@ -119,141 +149,82 @@ export default function CategoryPage() {
               Home
             </Link>
             <ChevronRight size={14} />
-            <Link href="/dashboard" className="hover:text-white transition-colors">
+            <Link href="/dashboard/category" className="hover:text-white transition-colors">
               Categories
             </Link>
             <ChevronRight size={14} />
             <span className="text-white font-medium">{categoryName}</span>
           </nav>
 
-          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-            <div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">
-                {categoryName}
-              </h1>
-              <p className="text-blue-200 text-sm sm:text-base max-w-xl">
-                {isLoading
-                  ? "Loading products…"
-                  : `${data?.total ?? 0} products found`}
-              </p>
-            </div>
-
-            {/* Sort Dropdown */}
-            <div className="flex items-center gap-3">
-              <div className="relative">
-                <select
-                  value={sort}
-                  onChange={(e) => setSort(e.target.value as SortOption)}
-                  className="appearance-none bg-white/10 backdrop-blur-sm text-white border border-white/20 rounded-full pl-4 pr-9 py-2.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-white/30 cursor-pointer"
-                >
-                  <option value="default" className="text-gray-800">Default</option>
-                  <option value="price-asc" className="text-gray-800">Price: Low → High</option>
-                  <option value="price-desc" className="text-gray-800">Price: High → Low</option>
-                  <option value="rating-desc" className="text-gray-800">Top Rated</option>
-                </select>
-                <ArrowUpDown
-                  size={14}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-white/70 pointer-events-none"
-                />
-              </div>
-
-              <button
-                onClick={() => setShowFilters((v) => !v)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full border text-sm font-medium transition-all ${
-                  showFilters
-                    ? "bg-white text-blue-700 border-white"
-                    : "bg-white/10 text-white border-white/20 hover:bg-white/20"
-                }`}
-              >
-                <SlidersHorizontal size={14} />
-                Filters
-                {hasActiveFilters && (
-                  <span className="w-2 h-2 rounded-full bg-orange-400" />
-                )}
-              </button>
-            </div>
+          <div>
+            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">
+              {categoryName}
+            </h1>
+            <p className="text-blue-200 text-sm sm:text-base max-w-xl">
+              {isLoading
+                ? "Loading products…"
+                : `${data?.total ?? 0} products found`}
+            </p>
           </div>
         </div>
       </div>
 
-      {/* Filter Panel */}
-      {showFilters && (
-        <div className="bg-white border-b border-gray-100 shadow-sm">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
-            <div className="flex flex-wrap items-start gap-8">
-              {/* Price */}
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                  Price Range
-                </p>
-                <div className="flex flex-wrap gap-2">
-                  {(
-                    [
-                      { label: "All", value: "all" },
-                      { label: "< $50", value: "under-50" },
-                      { label: "$50–$150", value: "50-150" },
-                      { label: "$150–$300", value: "150-300" },
-                      { label: "> $300", value: "over-300" },
-                    ] as { label: string; value: PriceFilter }[]
-                  ).map((opt) => (
-                    <button
-                      key={opt.value}
-                      onClick={() => setPriceFilter(opt.value)}
-                      className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all ${
-                        priceFilter === opt.value
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
-                      }`}
-                    >
-                      {opt.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+      {/* Filters Bar - always visible */}
+      <div className="bg-white border-b border-gray-100 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
+          <div className="flex flex-wrap items-end gap-6 justify-end">
+            {/* Sort by */}
+            <FilterSelect<SortOption>
+              label="Sort by"
+              value={sort}
+              onChange={setSort}
+              options={[
+                { label: "Default", value: "default" },
+                { label: "Price: Low → High", value: "price-asc" },
+                { label: "Price: High → Low", value: "price-desc" },
+                { label: "Top Rated", value: "rating-desc" },
+              ]}
+            />
 
-              {/* Rating */}
-              <div>
-                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
-                  Min Rating
-                </p>
-                <div className="flex gap-2">
-                  {[0, 3, 4, 4.5].map((r) => (
-                    <button
-                      key={r}
-                      onClick={() => setMinRating(r)}
-                      className={`px-3.5 py-1.5 rounded-full text-sm font-medium border transition-all flex items-center gap-1 ${
-                        minRating === r
-                          ? "bg-blue-600 text-white border-blue-600"
-                          : "bg-white text-gray-600 border-gray-200 hover:border-blue-300"
-                      }`}
-                    >
-                      {r === 0 ? (
-                        "All"
-                      ) : (
-                        <>
-                          <Star size={12} className="fill-current" />
-                          {r}+
-                        </>
-                      )}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            {/* Price */}
+            <FilterSelect<PriceFilter>
+              label="Price Range"
+              value={priceFilter}
+              onChange={setPriceFilter}
+              options={[
+                { label: "All Prices", value: "all" },
+                { label: "Under $50", value: "under-50" },
+                { label: "$50 – $150", value: "50-150" },
+                { label: "$150 – $300", value: "150-300" },
+                { label: "Over $300", value: "over-300" },
+              ]}
+            />
 
-              {/* Clear */}
-              {hasActiveFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="flex items-center gap-1.5 text-sm text-red-500 hover:text-red-600 font-medium mt-auto"
-                >
-                  <X size={14} />
-                  Clear all
-                </button>
-              )}
-            </div>
+            {/* Rating */}
+            <FilterSelect<RatingFilter>
+              label="Rating"
+              value={ratingFilter}
+              onChange={setRatingFilter}
+              options={[
+                { label: "All Ratings", value: "all" },
+                { label: "4 ★ & up", value: "4plus" },
+                { label: "4.5 ★ & up", value: "4.5plus" },
+                { label: "5 ★ only", value: "5" },
+              ]}
+            />
+
+            {/* Clear */}
+            {hasActiveFilters && (
+              <button
+                onClick={clearFilters}
+                className="text-sm text-red-500 hover:text-red-600 font-medium mb-0.5"
+              >
+                Clear filters
+              </button>
+            )}
           </div>
         </div>
-      )}
+      </div>
 
       {/* Products Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
