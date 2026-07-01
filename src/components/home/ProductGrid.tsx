@@ -189,6 +189,7 @@ export default function ProductGrid() {
               style={{ animation: `fadeInUp 0.4s ease ${(i % PAGE_SIZE) * 0.07}s both` }}
             >
               <ProductCard
+                id={product.id}
                 title={product.title}
                 category={product.category || "General"}
                 price={`$${product.price}`}

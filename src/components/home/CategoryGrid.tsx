@@ -2,18 +2,19 @@
 
 import { ArrowRight, ChevronUp, Loader2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useCategories } from "@/hooks/useCategories";
 
 const INITIAL_VISIBLE = 6;
 
 const staticCategories = [
-  { name: "Beauty",      img: "/cat_beauty.png" },
-  { name: "Fragrances",  img: "/cat_fragrances.png" },
-  { name: "Furniture",   img: "/cat_furniture.png" },
-  { name: "Accessories", img: "/cat_accessories.png" },
-  { name: "Electronics", img: "/cat_electronics.png" },
-  { name: "Apparel",     img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=400&h=400" },
+  { name: "Beauty",      slug: "beauty",      img: "/cat_beauty.png" },
+  { name: "Fragrances", slug: "fragrances",  img: "/cat_fragrances.png" },
+  { name: "Furniture",  slug: "furniture",   img: "/cat_furniture.png" },
+  { name: "Accessories",slug: "womens-bags", img: "/cat_accessories.png" },
+  { name: "Electronics",slug: "laptops",     img: "/cat_electronics.png" },
+  { name: "Apparel",    slug: "mens-shirts", img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=400&h=400" },
 ];
 
 const extraUnsplashIds = [
@@ -37,13 +38,14 @@ export default function CategoryGrid() {
   if (apiCategories && Array.isArray(apiCategories)) {
     const apiMapped = apiCategories
       .map((cat: any, index: number) => {
-        const raw = typeof cat === "string" ? cat : cat.name || cat.slug || "";
+        const raw = typeof cat === "string" ? cat : cat.slug || cat.name || "";
         const name = raw
           .split("-")
           .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(" ");
         return {
           name,
+          slug: raw,
           img: `https://images.unsplash.com/photo-${extraUnsplashIds[index % extraUnsplashIds.length]}?auto=format&fit=crop&q=80&w=400&h=400`,
         };
       })
@@ -86,9 +88,10 @@ export default function CategoryGrid() {
       ) : (
         <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-3 sm:gap-4">
           {visibleCategories.map((c, i) => (
-            <div
+            <Link
               key={`${c.name}-${i}`}
-              className="flex flex-col items-center gap-2 sm:gap-3 group cursor-pointer"
+              href={`/dashboard/category/${(c as any).slug || c.name.toLowerCase().replace(/\s+/g, "-")}`}
+              className="flex flex-col items-center gap-2 sm:gap-3 group"
               style={{ animation: `fadeInUp 0.35s ease ${i * 0.04}s both` }}
             >
               <div className="w-16 h-16 sm:w-20 sm:h-20 md:w-24 md:h-24 rounded-full overflow-hidden bg-gray-100 shadow-sm border-2 border-gray-100 group-hover:shadow-lg group-hover:border-blue-200 group-hover:scale-110 transition-all duration-300 relative">
@@ -103,7 +106,7 @@ export default function CategoryGrid() {
               <p className="text-xs md:text-sm font-medium text-gray-700 text-center group-hover:text-blue-600 transition-colors leading-tight">
                 {c.name}
               </p>
-            </div>
+            </Link>
           ))}
         </div>
       )}
