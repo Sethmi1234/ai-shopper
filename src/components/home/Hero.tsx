@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { Sparkles, Search } from "lucide-react";
 
 export default function Hero() {
@@ -33,11 +34,13 @@ export default function Hero() {
       {/* Hero Image */}
       <div className="hidden md:block relative z-10">
         <div className="w-[320px] lg:w-[420px] h-[320px] lg:h-[420px] rounded-3xl overflow-hidden shadow-2xl">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="https://images.unsplash.com/photo-1607082348524-1a0d98a8a923?w=800&h=800&auto=format&fit=crop&q=80"
+          <Image
+            src="/hero.jpg"
             alt="AI Shopping Experience"
+            width={420}
+            height={420}
             className="w-full h-full object-cover"
+            priority
           />
         </div>
       </div>
@@ -46,4 +49,4 @@ export default function Hero() {
       <div className="absolute top-0 right-0 -mr-20 -mt-20 w-[400px] md:w-[600px] h-[400px] md:h-[600px] bg-blue-100/40 rounded-full blur-3xl -z-0"></div>
     </div>
   );
-}
+}
