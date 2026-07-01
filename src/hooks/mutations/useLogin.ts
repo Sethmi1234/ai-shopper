@@ -1,30 +1,33 @@
 import { useMutation } from "@tanstack/react-query";
+import { useRouter } from "next/navigation";
 import { loginUser, getAuthUser } from "@/services/auth.service";
 
 export const useLogin = () => {
+  const router = useRouter();
+
   return useMutation({
     mutationFn: loginUser,
 
     onSuccess: async (data) => {
-      try {
-        // Save tokens first
-        localStorage.setItem("accessToken", data.accessToken);
-        localStorage.setItem("refreshToken", data.refreshToken);
+      // Save tokens to localStorage (for API interceptors)
+      const token = data.accessToken || data.token;
+      localStorage.setItem("accessToken", token);
+      localStorage.setItem("refreshToken", data.refreshToken || "");
 
-        // Call the private Auth Me API
-        const authData = await getAuthUser();
+      // Also save to cookie so Next.js middleware can enforce auth server-side
+      document.cookie = `accessToken=${token}; path=/; max-age=86400; SameSite=Lax`;
 
-        // Save authenticated user data
-        localStorage.setItem(
-          "authData",
-          JSON.stringify(authData)
-        );
+      // Try to get user data (non-blocking - don't await)
+      getAuthUser()
+        .then((authData) => {
+          localStorage.setItem("authData", JSON.stringify(authData));
+        })
+        .catch(() => {
+          // user fetch is optional, don't block login
+        });
 
-        console.log("Login successful");
-        console.log("Auth Data:", authData);
-      } catch (error) {
-        console.error("Failed to fetch auth user:", error);
-      }
+      // 🚀 REDIRECT TO DASHBOARD IMMEDIATELY
+      router.push("/dashboard");
     },
   });
 };
