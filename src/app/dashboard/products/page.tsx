@@ -95,6 +95,11 @@ export default function ProductsPage() {
     [allProductsData]
   );
 
+  const filteredSource = useMemo(
+    () => (selectedCategory ? allProducts : products),
+    [selectedCategory, allProducts, products]
+  );
+
   const categories = useMemo(() => {
     const apiCategories = Array.isArray(categoryData)
       ? categoryData
@@ -185,9 +190,9 @@ export default function ProductsPage() {
   }, [allProducts, categories]);
 
   const processed = useMemo(() => {
-    if (!products.length) return [];
+    if (!filteredSource.length) return [];
 
-    let filtered = [...products];
+    let filtered = [...filteredSource];
 
     // Category filter
     if (selectedCategory) {
