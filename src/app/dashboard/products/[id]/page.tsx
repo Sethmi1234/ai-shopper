@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
+import useCart from "@/store/useCart";
 import {
   ChevronRight,
   Loader2,
@@ -60,8 +61,20 @@ export default function ProductDetailPage() {
   const [quantity, setQuantity] = useState(1);
   const [wishlisted, setWishlisted] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
+  const addItem = useCart((s: any) => s.addItem);
 
   const handleAddToCart = () => {
+    if (!product) return;
+    addItem(
+      {
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        thumbnail: product.thumbnail,
+        category: product.category,
+      },
+      quantity
+    );
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
   };
