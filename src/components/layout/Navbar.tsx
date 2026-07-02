@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import useCart from "@/store/useCart";
 
 export default function Navbar() {
   const router = useRouter();
@@ -12,6 +13,7 @@ export default function Navbar() {
   const [username, setUsername] = useState<string | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const cartCount = useCart((s: any) => s.items.reduce((sum: number, item: any) => sum + item.quantity, 0));
 
   useEffect(() => {
     // Check if user is logged in and get their name & image
@@ -89,10 +91,12 @@ export default function Navbar() {
             <button className="hidden sm:block hover:text-blue-600 transition-colors">
               <Heart size={20} />
             </button>
-            <button className="hover:text-blue-600 transition-colors relative">
+            <Link href="/dashboard/cart" className="hover:text-blue-600 transition-colors relative">
               <ShoppingCart size={20} />
-              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#f8f9fc]"></span>
-            </button>
+              <span className="absolute -top-2 -right-2 min-w-[18px] h-4 rounded-full bg-blue-600 text-[10px] text-white font-semibold flex items-center justify-center px-1">
+                {cartCount}
+              </span>
+            </Link>
             
             <Link
               href="/dashboard/profile"

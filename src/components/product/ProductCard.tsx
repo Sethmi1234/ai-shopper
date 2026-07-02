@@ -1,6 +1,10 @@
+"use client";
+
+import { MouseEvent, useState } from "react";
 import { Heart, ShoppingCart, Sparkles, Star, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
+import useCart from "@/store/useCart";
 
 type ProductCardProps = {
   id: number;
@@ -14,6 +18,17 @@ type ProductCardProps = {
 };
 
 export default function ProductCard({ id, title, category, price, rating, reviews, img, badgeType }: ProductCardProps) {
+  const [added, setAdded] = useState(false);
+  const addItem = useCart((s: any) => s.addItem);
+
+  const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    addItem({ id, title, price: Number(price.replace("$", "")), thumbnail: img, category }, 1);
+    setAdded(true);
+    window.setTimeout(() => setAdded(false), 1200);
+  };
+
   return (
     <Link href={`/dashboard/products/${id}`} className="block group">
       <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-100 hover:-translate-y-1 transition-all">
@@ -55,8 +70,10 @@ export default function ProductCard({ id, title, category, price, rating, review
             <p className="text-2xl font-bold text-gray-900">{price}</p>
             
             <button
-              onClick={(e) => e.preventDefault()}
-              className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 hover:shadow-md transition-all"
+              onClick={handleAddToCart}
+              className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-all ${
+                added ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700 hover:shadow-md"
+              }`}
             >
               <ShoppingCart size={18} />
             </button>

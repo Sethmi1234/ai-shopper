@@ -17,6 +17,7 @@ import { useProducts } from "@/hooks/useProducts";
 import { useCategories } from "@/hooks/useCategories";
 import { getProducts } from "@/services/product.service";
 import ProductCard from "@/components/product/ProductCard";
+import useCart from "@/store/useCart";
 
 const PAGE_SIZE = 12;
 
@@ -74,6 +75,7 @@ export default function ProductsPage() {
     isFetchingNextPage,
   } = useProducts(PAGE_SIZE);
 
+  const addItem = useCart((state) => state.addItem);
   const { data: categoryData } = useCategories();
 
   const {
@@ -577,7 +579,21 @@ export default function ProductsPage() {
                                 )}
                               </div>
                               <button
-                                onClick={(e) => e.preventDefault()}
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  addItem(
+                                    {
+                                      id: product.id,
+                                      title: product.title,
+                                      price: Number(product.price),
+                                      thumbnail: product.thumbnail,
+                                      category: product.category,
+                                    },
+                                    1
+                                  );
+                                }}
                                 className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 hover:shadow-md transition-all"
                               >
                                 <ShoppingCart size={16} />
