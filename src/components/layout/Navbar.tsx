@@ -1,6 +1,7 @@
 "use client";
 
 import { Search, Heart, ShoppingCart, User, ShoppingBag, LogOut, Menu, X } from "lucide-react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -9,10 +10,11 @@ export default function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [username, setUsername] = useState<string | null>(null);
+  const [userImage, setUserImage] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    // Check if user is logged in and get their name
+    // Check if user is logged in and get their name & image
     const storedAuth = localStorage.getItem("authData");
     if (storedAuth) {
       try {
@@ -21,6 +23,9 @@ export default function Navbar() {
           setUsername(authData.firstName);
         } else if (authData?.username) {
           setUsername(authData.username);
+        }
+        if (authData?.image) {
+          setUserImage(authData.image);
         }
       } catch (e) {
         console.error("Failed to parse auth data");
@@ -89,12 +94,21 @@ export default function Navbar() {
               <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#f8f9fc]"></span>
             </button>
             
-            <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded-full shadow-sm">
-              <User size={16} className="text-blue-600" />
-              <span className="text-sm font-semibold text-gray-700">
-                {username ? `Hi, ${username}` : "Logged In"}
+            <Link
+              href="/dashboard/profile"
+              className="hidden sm:flex items-center gap-2 px-1.5 py-1.5 bg-white border border-gray-200 rounded-full shadow-sm hover:border-blue-200 hover:shadow-md transition-all"
+            >
+              <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
+                {userImage ? (
+                  <Image src={userImage} alt={username || "User"} width={28} height={28} className="object-cover w-full h-full" unoptimized />
+                ) : (
+                  username?.charAt(0).toUpperCase() || <User size={14} />
+                )}
+              </div>
+              <span className="text-sm font-semibold text-gray-700 pr-1">
+                {username || "Profile"}
               </span>
-            </div>
+            </Link>
 
             <button 
               onClick={handleLogout}
@@ -128,8 +142,12 @@ export default function Navbar() {
 
             {/* Mobile User Profile */}
             <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-2xl mb-8">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white">
-                <User size={20} />
+              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white overflow-hidden shrink-0">
+                {userImage ? (
+                  <Image src={userImage} alt={username || "User"} width={40} height={40} className="object-cover w-full h-full" unoptimized />
+                ) : (
+                  <User size={20} />
+                )}
               </div>
               <div>
                 <p className="text-sm text-blue-600 font-semibold">
