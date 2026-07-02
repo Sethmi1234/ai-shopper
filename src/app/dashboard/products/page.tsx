@@ -603,76 +603,7 @@ export default function ProductsPage() {
                   </div>
                 )}
 
-                {!selectedCategory && (
-                <div className="mt-20">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900">Products by category</h2>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Every category is listed below with products fetched from the full API dataset.
-                      </p>
-                    </div>
-                  </div>
-
-                  {isAllProductsLoading ? (
-                    <div className="flex justify-center items-center py-16">
-                      <Loader2 className="animate-spin text-blue-600" size={36} />
-                    </div>
-                  ) : allProductsError ? (
-                    <div className="text-center py-10 text-red-500 font-medium">
-                      Failed to load grouped products.
-                    </div>
-                  ) : (
-                    <div className="space-y-12">
-                      {categoriesToRender.map((category) => {
-                        const groupedProducts = productsByCategory.get(normalizeCategorySlug(category.slug)) ?? [];
-                        return (
-                          <section key={category.slug} className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
-                            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
-                              <div>
-                                <h3 className="text-xl font-semibold text-gray-900">{category.name}</h3>
-                                <p className="text-sm text-gray-500">
-                                  {groupedProducts.length > 0
-                                    ? `${groupedProducts.length} product${groupedProducts.length === 1 ? "" : "s"}`
-                                    : "No products available in this category."}
-                                </p>
-                              </div>
-                              <Link
-                                href={`/dashboard/category/${category.slug}`}
-                                className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                              >
-                                View category
-                              </Link>
-                            </div>
-
-                            {groupedProducts.length === 0 ? (
-                              <div className="rounded-2xl border border-dashed border-gray-200 p-8 text-center text-sm text-gray-500">
-                                No products found for this category yet.
-                              </div>
-                            ) : (
-                              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
-                                {groupedProducts.map((product: any) => (
-                                  <ProductCard
-                                    key={product.id}
-                                    id={product.id}
-                                    title={product.title}
-                                    category={formatCategoryName(product.category)}
-                                    price={`$${Number(product.price).toFixed(2)}`}
-                                    rating={Number(product.rating) || 0}
-                                    reviews={Array.isArray(product.reviews) ? product.reviews.length : 0}
-                                    img={product.thumbnail || "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&q=80&w=400&h=400"}
-                                    badgeType={undefined}
-                                  />
-                                ))}
-                              </div>
-                            )}
-                          </section>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-                )}
+                {/* Products by category section removed per user request */}
               </>
             )}
           </div>
