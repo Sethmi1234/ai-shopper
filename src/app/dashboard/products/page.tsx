@@ -145,11 +145,11 @@ export default function ProductsPage() {
   const displayedCategories = showAllCategories ? categories : categories.slice(0, 5);
 
   const priceBounds = useMemo(() => {
-    if (!products.length) {
+    if (!filteredSource.length) {
       return { min: 0, max: 0 };
     }
 
-    const prices = products.map((product: any) => Number(product.price));
+    const prices = filteredSource.map((product: any) => Number(product.price));
     const min = Math.min(...prices);
     const max = Math.max(...prices);
 
@@ -188,6 +188,11 @@ export default function ProductsPage() {
 
     return map;
   }, [allProducts, categories]);
+
+  const categoriesToRender = useMemo(() => {
+    if (!selectedCategory) return categories;
+    return categories.filter((c) => normalizeCategorySlug(c.slug) === selectedCategory);
+  }, [selectedCategory, categories]);
 
   const processed = useMemo(() => {
     if (!filteredSource.length) return [];
@@ -305,13 +310,14 @@ export default function ProductsPage() {
                 </div>
                 <div className="space-y-2">
                   {displayedCategories.map((category) => {
-                    const isActive = selectedCategory === category.slug;
+                    const normalizedSlug = normalizeCategorySlug(category.slug);
+                    const isActive = selectedCategory === normalizedSlug;
                     return (
                       <button
                         key={category.slug}
                         onClick={() => {
                           setSelectedCategory((prev) =>
-                            prev === category.slug ? "" : category.slug
+                            prev === normalizedSlug ? "" : normalizedSlug
                           );
                         }}
                         className={`w-full flex items-center gap-3 rounded-2xl border px-3 py-2 transition-all text-sm font-medium ${
@@ -329,8 +335,8 @@ export default function ProductsPage() {
                         />
                         {category.name}
                       </button>
-                    );
-                  })}
+                      );
+                    })}
                 </div>
                 {categories.length > 5 && (
                   <button
@@ -597,6 +603,7 @@ export default function ProductsPage() {
                   </div>
                 )}
 
+                {!selectedCategory && (
                 <div className="mt-20">
                   <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                     <div>
@@ -617,8 +624,8 @@ export default function ProductsPage() {
                     </div>
                   ) : (
                     <div className="space-y-12">
-                      {categories.map((category) => {
-                        const groupedProducts = productsByCategory.get(category.slug) ?? [];
+                      {categoriesToRender.map((category) => {
+                        const groupedProducts = productsByCategory.get(normalizeCategorySlug(category.slug)) ?? [];
                         return (
                           <section key={category.slug} className="bg-white rounded-3xl border border-gray-100 shadow-sm p-6">
                             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-5">
@@ -665,6 +672,7 @@ export default function ProductsPage() {
                     </div>
                   )}
                 </div>
+                )}
               </>
             )}
           </div>
@@ -683,6 +691,6 @@ export default function ProductsPage() {
           }
         }
       `}</style>
-    </div>
+   </div>
   );
 }
