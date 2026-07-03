@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useRouter, usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import useWishlist from "@/store/useWishlist";
 import useCart from "@/store/useCart";
 
 export default function Navbar() {
@@ -13,6 +14,7 @@ export default function Navbar() {
   const [username, setUsername] = useState<string | null>(null);
   const [userImage, setUserImage] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const wishlistCount = useWishlist((s) => s.items.length);
   const cartCount = useCart((s: any) => s.items.reduce((sum: number, item: any) => sum + item.quantity, 0));
 
   useEffect(() => {
@@ -88,9 +90,14 @@ export default function Navbar() {
           </div>
 
           <div className="flex items-center gap-3 sm:gap-5 text-gray-600">
-            <button className="hidden sm:block hover:text-blue-600 transition-colors">
+            <Link href="/dashboard/favorites" className="hidden sm:block hover:text-blue-600 transition-colors relative">
               <Heart size={20} />
-            </button>
+              {wishlistCount > 0 && (
+                <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 min-w-[18px] text-[10px] font-bold bg-blue-600 text-white rounded-full flex items-center justify-center leading-none">
+                  {wishlistCount > 99 ? "99+" : wishlistCount}
+                </span>
+              )}
+            </Link>
             <Link href="/dashboard/cart" className="hover:text-blue-600 transition-colors relative">
               <ShoppingCart size={20} />
               <span className="absolute -top-2 -right-2 min-w-[18px] h-4 rounded-full bg-blue-600 text-[10px] text-white font-semibold flex items-center justify-center px-1">
