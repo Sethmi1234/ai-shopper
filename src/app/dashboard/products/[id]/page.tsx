@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import useCart from "@/store/useCart";
+import useWishlist from "@/store/useWishlist";
 import {
   ChevronRight,
   Loader2,
@@ -59,9 +60,10 @@ export default function ProductDetailPage() {
 
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
-  const [wishlisted, setWishlisted] = useState(false);
   const [addedToCart, setAddedToCart] = useState(false);
   const addItem = useCart((s: any) => s.addItem);
+  const { toggleItem, isWishlisted } = useWishlist();
+  const wishlisted = product ? isWishlisted(product.id) : false;
 
   const handleAddToCart = () => {
     if (!product) return;
@@ -77,6 +79,18 @@ export default function ProductDetailPage() {
     );
     setAddedToCart(true);
     setTimeout(() => setAddedToCart(false), 2500);
+  };
+
+  const handleToggleWishlist = () => {
+    if (!product) return;
+    toggleItem({
+      id: product.id,
+      title: product.title,
+      price: product.price,
+      thumbnail: product.thumbnail,
+      category: product.category,
+      rating: product.rating,
+    });
   };
 
   const images: string[] = product
@@ -192,7 +206,7 @@ export default function ProductDetailPage() {
 
               {/* Wishlist */}
               <button
-                onClick={() => setWishlisted((v) => !v)}
+                onClick={handleToggleWishlist}
                 className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform"
               >
                 <Heart
@@ -425,7 +439,7 @@ export default function ProductDetailPage() {
 
               {/* Wishlist */}
               <button
-                onClick={() => setWishlisted((v) => !v)}
+                onClick={handleToggleWishlist}
                 className={`w-full py-3 rounded-full border text-sm font-semibold flex items-center justify-center gap-2 transition-all ${
                   wishlisted
                     ? "border-red-300 bg-red-50 text-red-500"

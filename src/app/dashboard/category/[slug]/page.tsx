@@ -14,6 +14,7 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { useCategoryProducts } from "@/hooks/useCategoryProducts";
+import useWishlist from "@/store/useWishlist";
 import { useCategories } from "@/hooks/useCategories";
 
 function formatCategoryName(slug: string) {
@@ -67,7 +68,6 @@ export default function CategoryPage() {
   const [sort, setSort] = useState<SortOption>("default");
   const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
   const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
-  const [wishlist, setWishlist] = useState<Set<number>>(new Set());
 
   // Resolve real category name from API (slug is exact API slug, e.g. "mens-shirts")
   const categoryName = (() => {
@@ -121,13 +121,7 @@ export default function CategoryPage() {
     return filtered;
   }, [products, sort, priceFilter, ratingFilter]);
 
-  const toggleWishlist = (id: number) => {
-    setWishlist((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
+  const { toggleItem, isWishlisted } = useWishlist();
 
   const clearFilters = () => {
     setPriceFilter("all");
@@ -299,22 +293,29 @@ export default function CategoryPage() {
                         ) : (
                           <div />
                         )}
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            toggleWishlist(product.id);
-                          }}
-                          className="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm transition-all hover:scale-110"
-                        >
-                          <Heart
-                            size={15}
-                            className={
-                              wishlist.has(product.id)
-                                ? "text-red-500 fill-red-500"
-                                : "text-gray-400"
-                            }
-                          />
-                        </button>
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              toggleItem({
+                                id: product.id,
+                                title: product.title,
+                                price: Number(product.price),
+                                thumbnail: product.thumbnail,
+                                category: product.category,
+                                rating: Number(product.rating),
+                              });
+                            }}
+                            className="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm transition-all hover:scale-110"
+                          >
+                            <Heart
+                              size={15}
+                              className={
+                                isWishlisted(product.id)
+                                  ? "text-red-500 fill-red-500"
+                                  : "text-gray-400"
+                              }
+                            />
+                          </button>
                       </div>
                     </div>
 

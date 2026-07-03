@@ -5,6 +5,7 @@ import { Heart, ShoppingCart, Sparkles, Star, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import Link from "next/link";
 import useCart from "@/store/useCart";
+import useWishlist from "@/store/useWishlist";
 
 type ProductCardProps = {
   id: number;
@@ -20,6 +21,8 @@ type ProductCardProps = {
 export default function ProductCard({ id, title, category, price, rating, reviews, img, badgeType }: ProductCardProps) {
   const [added, setAdded] = useState(false);
   const addItem = useCart((s: any) => s.addItem);
+  const { toggleItem, isWishlisted } = useWishlist();
+  const wishlisted = isWishlisted(id);
 
   const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {
     e.preventDefault();
@@ -27,6 +30,19 @@ export default function ProductCard({ id, title, category, price, rating, review
     addItem({ id, title, price: Number(price.replace("$", "")), thumbnail: img, category }, 1);
     setAdded(true);
     window.setTimeout(() => setAdded(false), 1200);
+  };
+
+  const handleToggleWishlist = (e: MouseEvent<HTMLButtonElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+    toggleItem({
+      id,
+      title,
+      price: Number(price.replace("$", "")),
+      thumbnail: img,
+      category,
+      rating,
+    });
   };
 
   return (
@@ -48,10 +64,15 @@ export default function ProductCard({ id, title, category, price, rating, review
             ) : <div></div>}
             
             <button
-              onClick={(e) => e.preventDefault()}
-              className="bg-white/90 backdrop-blur-sm p-2 rounded-full text-gray-400 hover:text-red-500 hover:bg-white shadow-sm transition-colors"
+              onClick={handleToggleWishlist}
+              className="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm transition-all hover:scale-110"
             >
-              <Heart size={16} />
+              <Heart
+                size={16}
+                className={
+                  wishlisted ? "text-red-500 fill-red-500" : "text-gray-400"
+                }
+              />
             </button>
           </div>
         </div>

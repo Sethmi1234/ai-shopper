@@ -18,6 +18,7 @@ import { useCategories } from "@/hooks/useCategories";
 import { getProducts } from "@/services/product.service";
 import ProductCard from "@/components/product/ProductCard";
 import useCart from "@/store/useCart";
+import useWishlist from "@/store/useWishlist";
 
 const PAGE_SIZE = 12;
 
@@ -64,7 +65,7 @@ export default function ProductsPage() {
   const [selectedCategory, setSelectedCategory] = useState<string>("");
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [maxPrice, setMaxPrice] = useState(0);
-  const [wishlist, setWishlist] = useState<Set<number>>(new Set());
+  const { toggleItem, isWishlisted } = useWishlist();
 
   const {
     data,
@@ -238,13 +239,6 @@ export default function ProductsPage() {
 
   const hasMore = Boolean(hasNextPage && products.length < totalProducts);
 
-  const toggleWishlist = (id: number) => {
-    setWishlist((prev) => {
-      const next = new Set(prev);
-      next.has(id) ? next.delete(id) : next.add(id);
-      return next;
-    });
-  };
 
   const clearFilters = () => {
     setSelectedCategory("");
@@ -515,14 +509,21 @@ export default function ProductsPage() {
                               <button
                                 onClick={(e) => {
                                   e.preventDefault();
-                                  toggleWishlist(product.id);
+                                  toggleItem({
+                                    id: product.id,
+                                    title: product.title,
+                                    price: Number(product.price),
+                                    thumbnail: product.thumbnail,
+                                    category: product.category,
+                                    rating: Number(product.rating),
+                                  });
                                 }}
                                 className="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm transition-all hover:scale-110"
                               >
                                 <Heart
                                   size={15}
                                   className={
-                                    wishlist.has(product.id)
+                                    isWishlisted(product.id)
                                       ? "text-red-500 fill-red-500"
                                       : "text-gray-400"
                                   }
