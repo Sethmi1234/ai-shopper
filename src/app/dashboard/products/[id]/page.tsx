@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import useCart from "@/store/useCart";
 import useWishlist from "@/store/useWishlist";
+import ShareModal from "@/components/product/ShareModal";
 import {
   ChevronRight,
   Loader2,
@@ -61,6 +62,7 @@ export default function ProductDetailPage() {
   const [selectedImage, setSelectedImage] = useState(0);
   const [quantity, setQuantity] = useState(1);
   const [addedToCart, setAddedToCart] = useState(false);
+  const [shareOpen, setShareOpen] = useState(false);
   const addItem = useCart((s: any) => s.addItem);
   const { toggleItem, isWishlisted } = useWishlist();
   const wishlisted = product ? isWishlisted(product.id) : false;
@@ -207,18 +209,21 @@ export default function ProductDetailPage() {
               {/* Wishlist */}
               <button
                 onClick={handleToggleWishlist}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-white shadow-md flex items-center justify-center hover:scale-110 transition-transform"
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-blue-600 shadow-md flex items-center justify-center hover:scale-110 hover:bg-blue-700 transition-transform"
               >
                 <Heart
                   size={18}
                   className={
-                    wishlisted ? "text-red-500 fill-red-500" : "text-gray-400"
+                    wishlisted ? "text-white fill-white" : "text-white"
                   }
                 />
               </button>
 
               {/* Share */}
-              <button className="absolute bottom-4 right-4 w-9 h-9 rounded-full bg-white/90 shadow flex items-center justify-center text-gray-400 hover:text-blue-600 transition-colors">
+              <button
+                onClick={() => setShareOpen(true)}
+                className="absolute bottom-4 right-4 w-9 h-9 rounded-full bg-blue-600 shadow flex items-center justify-center text-white hover:bg-blue-700 transition-colors"
+              >
                 <Share2 size={16} />
               </button>
 
@@ -519,6 +524,18 @@ export default function ProductDetailPage() {
           }
         }
       `}</style>
+
+      <ShareModal
+        isOpen={shareOpen}
+        onClose={() => setShareOpen(false)}
+        product={{
+          id: product.id,
+          title: product.title,
+          price: product.price,
+          thumbnail: product.thumbnail,
+          category: product.category,
+        }}
+      />
     </div>
   );
 }
