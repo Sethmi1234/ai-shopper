@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Heart, ShoppingCart, User, ShoppingBag, LogOut, Menu, X } from "lucide-react";
+import { Heart, ShoppingCart, User, ShoppingBag, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
@@ -63,16 +63,8 @@ export default function Navbar() {
           <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Deals</Link>
         </div>
 
-        {/* Right Section: Search & Icons */}
+        {/* Right Section: Icons */}
         <div className="flex items-center gap-4 sm:gap-6">
-          <div className="hidden lg:flex items-center gap-2 bg-gray-100/80 px-4 py-2.5 rounded-full min-w-[240px] focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white transition-all border border-transparent focus-within:border-gray-200">
-            <Search size={18} className="text-gray-400" />
-            <input
-              placeholder="Search..."
-              className="w-full bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400"
-            />
-          </div>
-
           <div className="flex items-center gap-3 sm:gap-5 text-gray-600">
             <button className="hidden sm:block hover:text-blue-600 transition-colors">
               <Heart size={20} />
@@ -130,15 +122,6 @@ export default function Navbar() {
                 </p>
                 <p className="text-xs text-blue-400">Welcome back!</p>
               </div>
-            </div>
-
-            {/* Mobile Search */}
-            <div className="flex items-center gap-2 bg-gray-100/80 px-4 py-3 rounded-xl mb-8">
-              <Search size={18} className="text-gray-400" />
-              <input
-                placeholder="Search products..."
-                className="w-full bg-transparent outline-none text-sm text-gray-700"
-              />
             </div>
 
             {/* Mobile Navigation Links */}
