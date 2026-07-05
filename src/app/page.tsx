@@ -1,19 +1,17 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { Hero3D } from '@/components/home/Hero3D';
+import { AISearch3D } from '@/components/home/AISearch3D';
+import { CategoryGrid3D } from '@/components/home/CategoryGrid3D';
+import { ProductGrid3D } from '@/components/home/ProductGrid3D';
 
 export default function Home() {
-  const router = useRouter();
-
-  useEffect(() => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      router.replace("/dashboard");
-    } else {
-      router.replace("/login");
-    }
-  }, [router]);
-
-  return null;
+  return (
+    <div className="w-full bg-background overflow-x-hidden">
+      <Hero3D />
+      <AISearch3D />
+      <CategoryGrid3D />
+      <ProductGrid3D title="Recommended For You" />
+    </div>
+  );
 }

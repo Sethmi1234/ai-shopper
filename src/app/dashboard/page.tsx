@@ -1,19 +1,17 @@
-"use client";
+'use client';
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Hero from "@/components/home/Hero";
-import CategoryGrid from "@/components/home/CategoryGrid";
-import ProductGrid from "@/components/home/ProductGrid";
-import AISearch from "@/components/home/AISearch";
+import { Hero3D } from '@/components/home/Hero3D';
+import { AISearch3D } from '@/components/home/AISearch3D';
+import { CategoryGrid3D } from '@/components/home/CategoryGrid3D';
+import { ProductGrid3D } from '@/components/home/ProductGrid3D';
 
 export default function DashboardPage() {
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      <Hero />
-      <AISearch />
-      <CategoryGrid />
-      <ProductGrid />
+    <div className="w-full bg-background overflow-x-hidden">
+      <Hero3D />
+      <AISearch3D />
+      <CategoryGrid3D />
+      <ProductGrid3D title="Recommended For You" />
     </div>
   );
 }
