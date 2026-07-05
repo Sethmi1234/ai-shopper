@@ -1,24 +1,17 @@
 "use client";
 
-import { Search, Heart, ShoppingCart, User, ShoppingBag, LogOut, Menu, X } from "lucide-react";
-import Image from "next/image";
+import { Heart, ShoppingCart, User, ShoppingBag, LogOut, Menu, X } from "lucide-react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import useWishlist from "@/store/useWishlist";
-import useCart from "@/store/useCart";
 
 export default function Navbar() {
   const router = useRouter();
-  const pathname = usePathname();
   const [username, setUsername] = useState<string | null>(null);
-  const [userImage, setUserImage] = useState<string | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const wishlistCount = useWishlist((s) => s.items.length);
-  const cartCount = useCart((s: any) => s.items.reduce((sum: number, item: any) => sum + item.quantity, 0));
 
   useEffect(() => {
-    // Check if user is logged in and get their name & image
+    // Check if user is logged in and get their name
     const storedAuth = localStorage.getItem("authData");
     if (storedAuth) {
       try {
@@ -27,9 +20,6 @@ export default function Navbar() {
           setUsername(authData.firstName);
         } else if (authData?.username) {
           setUsername(authData.username);
-        }
-        if (authData?.image) {
-          setUserImage(authData.image);
         }
       } catch (e) {
         console.error("Failed to parse auth data");
@@ -64,62 +54,32 @@ export default function Navbar() {
 
         {/* Desktop Navigation Links */}
         <div className="hidden md:flex items-center gap-8 font-medium text-gray-600">
-          <Link href="/dashboard" className={`relative ${pathname === "/dashboard" ? "text-blue-600" : "hover:text-blue-600 transition-colors"}`}>
+          <Link href="/dashboard" className="text-blue-600 relative">
             Home
-            {pathname === "/dashboard" && <div className="absolute -bottom-2 left-0 w-full h-0.5 bg-blue-600"></div>}
+            <div className="absolute -bottom-2 left-0 w-full h-0.5 bg-blue-600"></div>
           </Link>
-          <Link href="/dashboard/category" className={`relative ${pathname === "/dashboard/category" ? "text-blue-600" : "hover:text-blue-600 transition-colors"}`}>
-            Categories
-            {pathname === "/dashboard/category" && <div className="absolute -bottom-2 left-0 w-full h-0.5 bg-blue-600"></div>}
-          </Link>
-          <Link href="/dashboard/products" className={`relative ${pathname === "/dashboard/products" ? "text-blue-600" : "hover:text-blue-600 transition-colors"}`}>
-            Products
-            {pathname === "/dashboard/products" && <div className="absolute -bottom-2 left-0 w-full h-0.5 bg-blue-600"></div>}
-          </Link>
+          <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Categories</Link>
+          <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Products</Link>
           <Link href="/dashboard" className="hover:text-blue-600 transition-colors">Deals</Link>
         </div>
 
-        {/* Right Section: Search & Icons */}
+        {/* Right Section: Icons */}
         <div className="flex items-center gap-4 sm:gap-6">
-          <div className="hidden lg:flex items-center gap-2 bg-gray-100/80 px-4 py-2.5 rounded-full min-w-[240px] focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:bg-white transition-all border border-transparent focus-within:border-gray-200">
-            <Search size={18} className="text-gray-400" />
-            <input
-              placeholder="Search..."
-              className="w-full bg-transparent outline-none text-sm text-gray-700 placeholder-gray-400"
-            />
-          </div>
-
           <div className="flex items-center gap-3 sm:gap-5 text-gray-600">
-            <Link href="/dashboard/favorites" className="hidden sm:block hover:text-blue-600 transition-colors relative">
+            <button className="hidden sm:block hover:text-blue-600 transition-colors">
               <Heart size={20} />
-              {wishlistCount > 0 && (
-                <span className="absolute -top-1.5 -right-1.5 w-4.5 h-4.5 min-w-[18px] text-[10px] font-bold bg-blue-600 text-white rounded-full flex items-center justify-center leading-none">
-                  {wishlistCount > 99 ? "99+" : wishlistCount}
-                </span>
-              )}
-            </Link>
-            <Link href="/dashboard/cart" className="hover:text-blue-600 transition-colors relative">
+            </button>
+            <button className="hover:text-blue-600 transition-colors relative">
               <ShoppingCart size={20} />
-              <span className="absolute -top-2 -right-2 min-w-[18px] h-4 rounded-full bg-blue-600 text-[10px] text-white font-semibold flex items-center justify-center px-1">
-                {cartCount}
-              </span>
-            </Link>
+              <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-[#f8f9fc]"></span>
+            </button>
             
-            <Link
-              href="/dashboard/profile"
-              className="hidden sm:flex items-center gap-2 px-1.5 py-1.5 bg-white border border-gray-200 rounded-full shadow-sm hover:border-blue-200 hover:shadow-md transition-all"
-            >
-              <div className="w-7 h-7 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold overflow-hidden shrink-0">
-                {userImage ? (
-                  <Image src={userImage} alt={username || "User"} width={28} height={28} className="object-cover w-full h-full" unoptimized />
-                ) : (
-                  username?.charAt(0).toUpperCase() || <User size={14} />
-                )}
-              </div>
-              <span className="text-sm font-semibold text-gray-700 pr-1">
-                {username || "Profile"}
+            <div className="hidden sm:flex items-center gap-2 px-3 py-1 bg-white border border-gray-200 rounded-full shadow-sm">
+              <User size={16} className="text-blue-600" />
+              <span className="text-sm font-semibold text-gray-700">
+                {username ? `Hi, ${username}` : "Logged In"}
               </span>
-            </Link>
+            </div>
 
             <button 
               onClick={handleLogout}
@@ -153,12 +113,8 @@ export default function Navbar() {
 
             {/* Mobile User Profile */}
             <div className="flex items-center gap-3 p-4 bg-blue-50 rounded-2xl mb-8">
-              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white overflow-hidden shrink-0">
-                {userImage ? (
-                  <Image src={userImage} alt={username || "User"} width={40} height={40} className="object-cover w-full h-full" unoptimized />
-                ) : (
-                  <User size={20} />
-                )}
+              <div className="w-10 h-10 rounded-full bg-blue-600 flex items-center justify-center text-white">
+                <User size={20} />
               </div>
               <div>
                 <p className="text-sm text-blue-600 font-semibold">
@@ -168,22 +124,13 @@ export default function Navbar() {
               </div>
             </div>
 
-            {/* Mobile Search */}
-            <div className="flex items-center gap-2 bg-gray-100/80 px-4 py-3 rounded-xl mb-8">
-              <Search size={18} className="text-gray-400" />
-              <input
-                placeholder="Search products..."
-                className="w-full bg-transparent outline-none text-sm text-gray-700"
-              />
-            </div>
-
-        {/* Mobile Navigation Links */}
+            {/* Mobile Navigation Links */}
             <div className="flex flex-col gap-4 font-semibold text-lg text-gray-800 flex-1">
-              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className={pathname === "/dashboard" ? "text-blue-600" : ""}>Home</Link>
-              <Link href="/dashboard/category" onClick={() => setIsMenuOpen(false)} className={pathname === "/dashboard/category" ? "text-blue-600" : ""}>Categories</Link>
-              <Link href="/dashboard/products" onClick={() => setIsMenuOpen(false)} className={pathname === "/dashboard/products" ? "text-blue-600" : ""}>Products</Link>
-              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className={pathname === "/dashboard" ? "text-blue-600" : ""}>Deals</Link>
-              <Link href="/dashboard/favorites" onClick={() => setIsMenuOpen(false)} className={pathname === "/dashboard/favorites" ? "text-blue-600" : ""}>My Favorites</Link>
+              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)} className="text-blue-600">Home</Link>
+              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>Categories</Link>
+              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>Products</Link>
+              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>Deals</Link>
+              <Link href="/dashboard" onClick={() => setIsMenuOpen(false)}>My Favorites</Link>
             </div>
 
             {/* Mobile Logout */}
