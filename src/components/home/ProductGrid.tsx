@@ -5,7 +5,7 @@ import { ChevronDown, Loader2, Check } from "lucide-react";
 import ProductCard from "../product/ProductCard";
 import { useProducts } from "@/hooks/useProducts";
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 8;
 
 type SortOption = "ai-match" | "price-asc" | "price-desc" | "rating-desc";
 type PriceFilter = "all" | "under-50" | "50-150" | "150-300" | "over-300";
@@ -29,7 +29,7 @@ function Dropdown<T extends string>({
     <div className="relative">
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-4 py-2 rounded-full border border-gray-200 text-sm font-medium text-gray-700 hover:bg-gray-50 bg-white transition-colors shadow-sm"
+        className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-xs font-bold uppercase tracking-wider text-black hover:bg-gray-50 bg-white transition-colors"
       >
         {selected?.label ?? label}
         <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
@@ -38,15 +38,15 @@ function Dropdown<T extends string>({
       {open && (
         <>
           <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-48 bg-white rounded-2xl shadow-xl border border-gray-100 z-20 overflow-hidden py-1">
+          <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-xl border border-gray-100 z-20 py-2">
             {options.map((opt) => (
               <button
                 key={opt.value}
                 onClick={() => { onChange(opt.value); setOpen(false); }}
-                className="w-full flex items-center justify-between px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 transition-colors"
+                className="w-full flex items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-50 hover:text-black transition-colors"
               >
                 {opt.label}
-                {value === opt.value && <Check size={14} className="text-blue-600" />}
+                {value === opt.value && <Check size={14} className="text-black" />}
               </button>
             ))}
           </div>
@@ -113,12 +113,12 @@ export default function ProductGrid() {
       : 42;
 
   return (
-    <div className="mt-16 md:mt-20">
+    <div className="mt-16 md:mt-24">
       {/* Header + Filters */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 md:mb-8 gap-4">
-        <h2 className="text-xl md:text-2xl font-bold text-gray-900">Recommended for You</h2>
+      <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-6 border-b border-gray-200 pb-4">
+        <h2 className="text-2xl md:text-3xl font-black text-black uppercase tracking-tighter">Recommended For You</h2>
 
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 -mx-4 px-4 md:mx-0 md:px-0 md:pb-0 scrollbar-hide snap-x">
+        <div className="flex items-center gap-3 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:pb-0 scrollbar-hide snap-x">
           <div className="shrink-0 snap-start">
             <Dropdown<PriceFilter>
               label="Price"
@@ -148,11 +148,11 @@ export default function ProductGrid() {
           </div>
           <div className="shrink-0 snap-start">
             <Dropdown<SortOption>
-              label="Sort by: AI Match"
+              label="Sort: AI Match"
               value={sort}
               onChange={(v) => { setSort(v); setVisibleCount(PAGE_SIZE); }}
               options={[
-                { label: "Sort by: AI Match", value: "ai-match" },
+                { label: "Sort: AI Match", value: "ai-match" },
                 { label: "Price: Low → High", value: "price-asc" },
                 { label: "Price: High → Low", value: "price-desc" },
                 { label: "Top Rated", value: "rating-desc" },
@@ -165,7 +165,7 @@ export default function ProductGrid() {
       {/* Grid */}
       {isLoading ? (
         <div className="flex justify-center items-center py-24">
-          <Loader2 className="animate-spin text-blue-600" size={36} />
+          <Loader2 className="animate-spin text-black" size={36} />
         </div>
       ) : error ? (
         <div className="text-center py-10 text-red-500 font-medium">
@@ -173,16 +173,16 @@ export default function ProductGrid() {
         </div>
       ) : processed.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-lg font-medium">No products match your filters.</p>
+          <p className="text-lg font-bold">No products match your filters.</p>
           <button
             onClick={() => { setPriceFilter("all"); setRatingFilter("all"); setSort("ai-match"); }}
-            className="mt-4 text-blue-600 underline text-sm"
+            className="mt-4 text-black underline text-sm uppercase tracking-wide font-bold"
           >
             Clear filters
           </button>
         </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 gap-y-12">
           {visible.map((product: any, i: number) => (
             <div
               key={product.id}
@@ -204,12 +204,12 @@ export default function ProductGrid() {
 
       {/* Load More */}
       {!isLoading && !error && hasMore && (
-        <div className="mt-12 flex justify-center">
+        <div className="mt-16 flex justify-center">
           <button
             onClick={handleLoadMore}
-            className="px-8 py-3 rounded-full border-2 border-blue-600 text-blue-600 font-semibold hover:bg-blue-50 transition-colors flex items-center gap-2"
+            className="px-10 py-4 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors"
           >
-            Load More Recommendations
+            Load More Products
           </button>
         </div>
       )}
