@@ -1,15 +1,7 @@
-"use client";
-
-import { MouseEvent, useState } from "react";
-import { Heart, ShoppingCart, Sparkles, Star, TrendingUp, Share2 } from "lucide-react";
+import { Heart, Eye, ShoppingBag, Sparkles, Star, TrendingUp } from "lucide-react";
 import Image from "next/image";
-import Link from "next/link";
-import useCart from "@/store/useCart";
-import useWishlist from "@/store/useWishlist";
-import ShareModal from "./ShareModal";
 
 type ProductCardProps = {
-  id: number;
   title: string;
   category: string;
   price: string;
@@ -19,118 +11,49 @@ type ProductCardProps = {
   badgeType?: "match" | "trending";
 };
 
-export default function ProductCard({ id, title, category, price, rating, reviews, img, badgeType }: ProductCardProps) {
-  const [added, setAdded] = useState(false);
-  const [shareOpen, setShareOpen] = useState(false);
-  const addItem = useCart((s: any) => s.addItem);
-  const { toggleItem, isWishlisted } = useWishlist();
-  const wishlisted = isWishlisted(id);
-
-  const handleAddToCart = (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    addItem({ id, title, price: Number(price.replace("$", "")), thumbnail: img, category }, 1);
-    setAdded(true);
-    window.setTimeout(() => setAdded(false), 1200);
-  };
-
-  const handleToggleWishlist = (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    toggleItem({
-      id,
-      title,
-      price: Number(price.replace("$", "")),
-      thumbnail: img,
-      category,
-      rating,
-    });
-  };
-
-  const handleShare = (e: MouseEvent<HTMLButtonElement>) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setShareOpen(true);
-  };
-
+export default function ProductCard({ title, category, price, rating, reviews, img, badgeType }: ProductCardProps) {
   return (
-    <>
-      <Link href={`/dashboard/products/${id}`} className="block group">
-        <div className="bg-white p-4 rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-100 hover:-translate-y-1 transition-all">
-          <div className="relative h-64 w-full rounded-2xl overflow-hidden bg-gray-50 mb-4">
-            <Image src={img} alt={title} fill className="object-cover" unoptimized={img.startsWith('http')} />
-
-            {/* Top Badges */}
-            <div className="absolute top-3 left-3 flex justify-between w-[calc(100%-24px)] items-start">
-              {badgeType === "match" ? (
-                <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-semibold text-blue-700 flex items-center gap-1 shadow-sm">
-                  <Sparkles size={12} className="text-blue-500" /> 98% Match
-                </div>
-              ) : badgeType === "trending" ? (
-                <div className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-semibold text-blue-700 flex items-center gap-1 shadow-sm">
-                  <TrendingUp size={12} className="text-blue-500" /> Trending
-                </div>
-              ) : <div></div>}
-
-              <button
-                onClick={handleToggleWishlist}
-                className="bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm transition-all hover:scale-110"
-              >
-                <Heart
-                  size={16}
-                  className={
-                    wishlisted ? "text-red-500 fill-red-500" : "text-gray-400"
-                  }
-                />
-              </button>
+    <div className="bg-white group cursor-pointer">
+      <div className="relative h-[300px] w-full overflow-hidden bg-gray-50 mb-4">
+        <Image src={img} alt={title} fill className="object-cover group-hover:scale-105 transition-transform duration-700" unoptimized={img.startsWith('http')} />
+        
+        {/* Top Badges */}
+        <div className="absolute top-3 left-3 flex justify-between w-[calc(100%-24px)] items-start z-10">
+          {badgeType === "match" ? (
+            <div className="bg-black text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <Sparkles size={12} className="text-[#ccff00]" /> 98% Match
             </div>
-          </div>
-
-          <div className="px-1">
-            <h3 className="font-bold text-gray-900 text-lg mb-1 truncate">{title}</h3>
-            <p className="text-gray-500 text-sm mb-3">{category}</p>
-
-            <div className="flex items-center gap-1 mb-4">
-              <Star size={14} className="text-orange-400 fill-orange-400" />
-              <span className="text-sm font-medium text-gray-700">{rating}</span>
-              <span className="text-sm text-gray-400">({reviews} reviews)</span>
+          ) : badgeType === "trending" ? (
+            <div className="bg-[#ccff00] text-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+              <TrendingUp size={12} /> Trending
             </div>
-
-            <div className="flex justify-between items-center mt-2">
-              <p className="text-2xl font-bold text-gray-900">{price}</p>
-
-              <div className="flex gap-2">
-                <button
-                  onClick={handleShare}
-                  className="w-10 h-10 rounded-full border border-gray-200 flex items-center justify-center text-gray-500 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition-all"
-                >
-                  <Share2 size={18} />
-                </button>
-                <button
-                  onClick={handleAddToCart}
-                  className={`w-10 h-10 rounded-full flex items-center justify-center text-white transition-all ${
-                    added ? "bg-green-600 hover:bg-green-700" : "bg-blue-600 hover:bg-blue-700 hover:shadow-md"
-                  }`}
-                >
-                  <ShoppingCart size={18} />
-                </button>
-              </div>
-            </div>
-          </div>
+          ) : <div></div>}
+          
+          <button className="bg-white p-2 text-black hover:bg-[#ccff00] transition-colors shadow-sm">
+            <Heart size={16} strokeWidth={2} />
+          </button>
         </div>
-      </Link>
 
-      <ShareModal
-        isOpen={shareOpen}
-        onClose={() => setShareOpen(false)}
-        product={{
-          id,
-          title,
-          price: Number(price.replace("$", "")),
-          thumbnail: img,
-          category,
-        }}
-      />
-    </>
+        {/* Hover Actions */}
+        <div className="absolute bottom-0 left-0 w-full p-4 flex gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 bg-gradient-to-t from-black/50 to-transparent">
+          <button className="flex-1 bg-white hover:bg-black hover:text-white text-black py-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
+            <ShoppingBag size={14} /> Add to Cart
+          </button>
+        </div>
+      </div>
+
+      <div className="px-1">
+        <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">{category}</p>
+        <h3 className="font-bold text-gray-900 text-base mb-2 line-clamp-1 group-hover:text-gray-600 transition-colors">{title}</h3>
+        
+        <div className="flex items-center gap-1 mb-2">
+          <Star size={12} className="text-black fill-black" />
+          <span className="text-xs font-bold text-black">{rating}</span>
+          <span className="text-xs text-gray-400">({reviews})</span>
+        </div>
+
+        <p className="text-lg font-black text-gray-900">{price}</p>
+      </div>
+    </div>
   );
 }
