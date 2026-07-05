@@ -1,165 +1,48 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { ChevronDown, Loader2, Check } from "lucide-react";
-import ProductCard from "../product/ProductCard";
-import { useProducts } from "@/hooks/useProducts";
+import { useState } from "react";
+import { Loader2, ShoppingBag, Heart, Star, TrendingUp, Sparkles } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { getProducts } from "@/services/product.service";
+import useCart from "@/store/useCart";
+import useWishlist from "@/store/useWishlist";
 
 const PAGE_SIZE = 8;
 
-type SortOption = "ai-match" | "price-asc" | "price-desc" | "rating-desc";
-type PriceFilter = "all" | "under-50" | "50-150" | "150-300" | "over-300";
-type RatingFilter = "all" | "4plus" | "4.5plus" | "5";
-
-function Dropdown<T extends string>({
-  label,
-  options,
-  value,
-  onChange,
-}: {
-  label: string;
-  options: { label: string; value: T }[];
-  value: T;
-  onChange: (v: T) => void;
-}) {
-  const [open, setOpen] = useState(false);
-  const selected = options.find((o) => o.value === value);
-
-  return (
-    <div className="relative">
-      <button
-        onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 px-4 py-2 border border-gray-200 text-xs font-bold uppercase tracking-wider text-black hover:bg-gray-50 bg-white transition-colors"
-      >
-        {selected?.label ?? label}
-        <ChevronDown size={14} className={`transition-transform ${open ? "rotate-180" : ""}`} />
-      </button>
-
-      {open && (
-        <>
-          <div className="fixed inset-0 z-10" onClick={() => setOpen(false)} />
-          <div className="absolute right-0 top-full mt-2 w-48 bg-white shadow-xl border border-gray-100 z-20 py-2">
-            {options.map((opt) => (
-              <button
-                key={opt.value}
-                onClick={() => { onChange(opt.value); setOpen(false); }}
-                className="w-full flex items-center justify-between px-4 py-2 text-xs font-bold uppercase tracking-wider text-gray-600 hover:bg-gray-50 hover:text-black transition-colors"
-              >
-                {opt.label}
-                {value === opt.value && <Check size={14} className="text-black" />}
-              </button>
-            ))}
-          </div>
-        </>
-      )}
-    </div>
-  );
-}
-
 export default function ProductGrid() {
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-  const [sort, setSort] = useState<SortOption>("ai-match");
-  const [priceFilter, setPriceFilter] = useState<PriceFilter>("all");
-  const [ratingFilter, setRatingFilter] = useState<RatingFilter>("all");
+  const addItem = useCart((state) => state.addItem);
+  const { toggleItem, isWishlisted } = useWishlist();
 
-  // Fetch a large pool so we can filter/sort client-side
-  const { data, isLoading, error } = useProducts(30);
+  const { data, isLoading, error } = useInfiniteQuery({
+    queryKey: ["products-home", 30] as const,
+    queryFn: async ({ pageParam = 0 }: { pageParam?: number }) => getProducts(30, pageParam),
+    initialPageParam: 0,
+    getNextPageParam: () => undefined,
+  });
 
-  const processed = useMemo(() => {
-    if (!data?.products) return [];
-
-    let products = [...data.products];
-
-    // Price filter
-    products = products.filter((p: any) => {
-      const price = Number(p.price);
-      if (priceFilter === "under-50") return price < 50;
-      if (priceFilter === "50-150") return price >= 50 && price <= 150;
-      if (priceFilter === "150-300") return price > 150 && price <= 300;
-      if (priceFilter === "over-300") return price > 300;
-      return true;
-    });
-
-    // Rating filter
-    products = products.filter((p: any) => {
-      const rating = Number(p.rating);
-      if (ratingFilter === "4plus") return rating >= 4;
-      if (ratingFilter === "4.5plus") return rating >= 4.5;
-      if (ratingFilter === "5") return rating === 5;
-      return true;
-    });
-
-    // Sort
-    products.sort((a: any, b: any) => {
-      if (sort === "price-asc") return Number(a.price) - Number(b.price);
-      if (sort === "price-desc") return Number(b.price) - Number(a.price);
-      if (sort === "rating-desc") return Number(b.rating) - Number(a.rating);
-      return 0; // ai-match = original order
-    });
-
-    return products;
-  }, [data, sort, priceFilter, ratingFilter]);
-
-  const visible = processed.slice(0, visibleCount);
-  const hasMore = visibleCount < processed.length;
-
-  const handleLoadMore = () => setVisibleCount((c) => c + PAGE_SIZE);
+  const products: any[] = data?.pages?.flatMap((p) => p.products) ?? [];
+  const visible = products.slice(0, visibleCount);
+  const hasMore = visibleCount < products.length;
 
   const reviewCount = (p: any) =>
-    Array.isArray(p.reviews)
-      ? p.reviews.length
-      : typeof p.reviews === "number"
-      ? p.reviews
-      : 42;
+    Array.isArray(p.reviews) ? p.reviews.length : typeof p.reviews === "number" ? p.reviews : 42;
 
   return (
     <div className="mt-16 md:mt-24">
-      {/* Header + Filters */}
-      <div className="flex flex-col lg:flex-row lg:items-end justify-between mb-8 gap-6 border-b border-gray-200 pb-4">
-        <h2 className="text-2xl md:text-3xl font-black text-black uppercase tracking-tighter">Recommended For You</h2>
-
-        <div className="flex items-center gap-3 overflow-x-auto pb-2 -mx-4 px-4 lg:mx-0 lg:px-0 lg:pb-0 scrollbar-hide snap-x">
-          <div className="shrink-0 snap-start">
-            <Dropdown<PriceFilter>
-              label="Price"
-              value={priceFilter}
-              onChange={(v) => { setPriceFilter(v); setVisibleCount(PAGE_SIZE); }}
-              options={[
-                { label: "All Prices", value: "all" },
-                { label: "Under $50", value: "under-50" },
-                { label: "$50 – $150", value: "50-150" },
-                { label: "$150 – $300", value: "150-300" },
-                { label: "Over $300", value: "over-300" },
-              ]}
-            />
-          </div>
-          <div className="shrink-0 snap-start">
-            <Dropdown<RatingFilter>
-              label="Rating"
-              value={ratingFilter}
-              onChange={(v) => { setRatingFilter(v); setVisibleCount(PAGE_SIZE); }}
-              options={[
-                { label: "All Ratings", value: "all" },
-                { label: "4★ & up", value: "4plus" },
-                { label: "4.5★ & up", value: "4.5plus" },
-                { label: "5★ only", value: "5" },
-              ]}
-            />
-          </div>
-          <div className="shrink-0 snap-start">
-            <Dropdown<SortOption>
-              label="Sort: AI Match"
-              value={sort}
-              onChange={(v) => { setSort(v); setVisibleCount(PAGE_SIZE); }}
-              options={[
-                { label: "Sort: AI Match", value: "ai-match" },
-                { label: "Price: Low → High", value: "price-asc" },
-                { label: "Price: High → Low", value: "price-desc" },
-                { label: "Top Rated", value: "rating-desc" },
-              ]}
-            />
-          </div>
-        </div>
+      {/* Header */}
+      <div className="flex items-end justify-between mb-8 border-b border-gray-200 pb-4">
+        <h2 className="text-2xl md:text-3xl font-black text-black uppercase tracking-tighter">
+          Recommended For You
+        </h2>
+        <Link
+          href="/dashboard/products"
+          className="text-xs font-bold uppercase tracking-widest text-gray-500 hover:text-black transition-colors"
+        >
+          View All
+        </Link>
       </div>
 
       {/* Grid */}
@@ -171,32 +54,99 @@ export default function ProductGrid() {
         <div className="text-center py-10 text-red-500 font-medium">
           Failed to load products. Please try again.
         </div>
-      ) : processed.length === 0 ? (
+      ) : products.length === 0 ? (
         <div className="text-center py-16 text-gray-400">
-          <p className="text-lg font-bold">No products match your filters.</p>
-          <button
-            onClick={() => { setPriceFilter("all"); setRatingFilter("all"); setSort("ai-match"); }}
-            className="mt-4 text-black underline text-sm uppercase tracking-wide font-bold"
-          >
-            Clear filters
-          </button>
+          <p className="text-lg font-bold">No products found.</p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 gap-y-12">
           {visible.map((product: any, i: number) => (
             <div
               key={product.id}
+              className="bg-white group cursor-pointer"
               style={{ animation: `fadeInUp 0.4s ease ${(i % PAGE_SIZE) * 0.07}s both` }}
             >
-              <ProductCard
-                title={product.title}
-                category={product.category || "General"}
-                price={`$${product.price}`}
-                rating={product.rating || 4.5}
-                reviews={reviewCount(product)}
-                img={product.thumbnail || "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&q=80&w=400&h=400"}
-                badgeType={i === 0 ? "match" : i === 3 ? "trending" : undefined}
-              />
+              <Link href={`/dashboard/products/${product.id}`} className="block">
+                <div className="relative h-[280px] w-full overflow-hidden bg-gray-50 mb-4">
+                  <Image
+                    src={product.thumbnail || "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&q=80&w=400&h=400"}
+                    alt={product.title}
+                    fill
+                    className="object-cover group-hover:scale-105 transition-transform duration-700"
+                    unoptimized
+                  />
+
+                  {/* Badge */}
+                  <div className="absolute top-3 left-3 flex justify-between w-[calc(100%-24px)] items-start z-10">
+                    {i === 0 ? (
+                      <div className="bg-black text-white px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                        <Sparkles size={12} className="text-[#ccff00]" /> 98% Match
+                      </div>
+                    ) : i === 3 ? (
+                      <div className="bg-[#ccff00] text-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider flex items-center gap-1">
+                        <TrendingUp size={12} /> Trending
+                      </div>
+                    ) : product.discountPercentage > 15 ? (
+                      <div className="bg-black text-[#ccff00] px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider">
+                        -{Math.round(product.discountPercentage)}% OFF
+                      </div>
+                    ) : <div />}
+
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        toggleItem({
+                          id: product.id,
+                          title: product.title,
+                          price: Number(product.price),
+                          thumbnail: product.thumbnail,
+                          category: product.category,
+                          rating: Number(product.rating),
+                        });
+                      }}
+                      className="bg-white p-2 text-black hover:bg-[#ccff00] transition-colors shadow-sm"
+                    >
+                      <Heart
+                        size={16}
+                        strokeWidth={2}
+                        className={isWishlisted(product.id) ? "fill-black" : ""}
+                      />
+                    </button>
+                  </div>
+
+                  {/* Hover Add to Cart */}
+                  <div className="absolute bottom-0 left-0 w-full p-4 flex gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 bg-gradient-to-t from-black/60 to-transparent">
+                    <button
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        addItem({
+                          id: product.id,
+                          title: product.title,
+                          price: Number(product.price),
+                          thumbnail: product.thumbnail,
+                          category: product.category,
+                        }, 1);
+                      }}
+                      className="flex-1 bg-white hover:bg-black hover:text-white text-black py-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+                    >
+                      <ShoppingBag size={14} /> Add to Cart
+                    </button>
+                  </div>
+                </div>
+
+                <div className="px-1">
+                  <p className="text-gray-500 text-xs font-bold uppercase tracking-widest mb-1">{product.category || "General"}</p>
+                  <h3 className="font-bold text-gray-900 text-base mb-2 line-clamp-1 group-hover:text-gray-600 transition-colors">{product.title}</h3>
+                  <div className="flex items-center gap-1 mb-2">
+                    <Star size={12} className="text-black fill-black" />
+                    <span className="text-xs font-bold text-black">{product.rating}</span>
+                    <span className="text-xs text-gray-400">({reviewCount(product)})</span>
+                  </div>
+                  <p className="text-lg font-black text-gray-900">${product.price}</p>
+                </div>
+              </Link>
             </div>
           ))}
         </div>
@@ -206,7 +156,7 @@ export default function ProductGrid() {
       {!isLoading && !error && hasMore && (
         <div className="mt-16 flex justify-center">
           <button
-            onClick={handleLoadMore}
+            onClick={() => setVisibleCount((c) => c + PAGE_SIZE)}
             className="px-10 py-4 bg-black text-white text-xs font-bold uppercase tracking-widest hover:bg-gray-800 transition-colors"
           >
             Load More Products

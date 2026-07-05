@@ -1,5 +1,8 @@
-import { Heart, Eye, ShoppingBag, Sparkles, Star, TrendingUp } from "lucide-react";
+"use client";
+
+import { Heart, ShoppingBag, Sparkles, Star, TrendingUp } from "lucide-react";
 import Image from "next/image";
+import useWishlist from "@/store/useWishlist";
 
 type ProductCardProps = {
   title: string;
@@ -9,9 +12,28 @@ type ProductCardProps = {
   reviews: number;
   img: string;
   badgeType?: "match" | "trending";
+  id?: number;
 };
 
-export default function ProductCard({ title, category, price, rating, reviews, img, badgeType }: ProductCardProps) {
+export default function ProductCard({ title, category, price, rating, reviews, img, badgeType, id }: ProductCardProps) {
+  const { toggleItem, isWishlisted } = useWishlist();
+  const wishlisted = id ? isWishlisted(id) : false;
+
+  const handleWishlistToggle = (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (id) {
+      toggleItem({
+        id,
+        title,
+        price: Number(price.replace(/[^0-9.]/g, "")),
+        thumbnail: img,
+        category,
+        rating,
+      });
+    }
+  };
+
   return (
     <div className="bg-white group cursor-pointer">
       <div className="relative h-[300px] w-full overflow-hidden bg-gray-50 mb-4">
@@ -29,8 +51,13 @@ export default function ProductCard({ title, category, price, rating, reviews, i
             </div>
           ) : <div></div>}
           
-          <button className="bg-white p-2 text-black hover:bg-[#ccff00] transition-colors shadow-sm">
-            <Heart size={16} strokeWidth={2} />
+          <button
+            onClick={handleWishlistToggle}
+            className={`p-2 transition-colors shadow-sm ${
+              wishlisted ? "bg-[#ccff00] text-black" : "bg-white text-black hover:bg-[#ccff00]"
+            }`}
+          >
+            <Heart size={16} strokeWidth={2} className={wishlisted ? "fill-black" : ""} />
           </button>
         </div>
 

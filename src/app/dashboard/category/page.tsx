@@ -6,11 +6,11 @@ import Link from "next/link";
 import { useCategories } from "@/hooks/useCategories";
 
 const staticCategories = [
-  { name: "Beauty", slug: "beauty", img: "/cat_beauty.png" },
-  { name: "Fragrances", slug: "fragrances", img: "/cat_fragrances.png" },
-  { name: "Furniture", slug: "furniture", img: "/cat_furniture.png" },
-  { name: "Accessories", slug: "womens-bags", img: "/cat_accessories.png" },
-  { name: "Electronics", slug: "laptops", img: "/cat_electronics.png" },
+  { name: "Beauty", slug: "beauty", img: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=400&h=400" },
+  { name: "Fragrances", slug: "fragrances", img: "https://images.unsplash.com/photo-1588776814546-1ffbb3c29edf?auto=format&fit=crop&q=80&w=400&h=400" },
+  { name: "Furniture", slug: "furniture", img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=400&h=400" },
+  { name: "Accessories", slug: "womens-bags", img: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=400&h=400" },
+  { name: "Electronics", slug: "laptops", img: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=400&h=400" },
   { name: "Apparel", slug: "mens-shirts", img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=400&h=400" },
 ];
 
@@ -39,7 +39,6 @@ export default function CategoryListingPage() {
             .split("-")
             .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
             .join(" ");
-
           return {
             name,
             slug: raw,
@@ -60,43 +59,43 @@ export default function CategoryListingPage() {
   })();
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc]">
-      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <div className="max-w-2xl">
-            <p className="text-sm uppercase tracking-[0.3em] text-blue-200 mb-3">Shop by interest</p>
-            <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">All Categories</h1>
-            <p className="mt-3 text-sm sm:text-base text-blue-100">
-              Browse every category available in the dashboard in one place.
-            </p>
-          </div>
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <div className="bg-black text-white py-14 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto">
+          <p className="text-xs font-bold uppercase tracking-[0.3em] text-gray-400 mb-3">Shop by interest</p>
+          <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">All Categories</h1>
+          <p className="mt-3 text-sm text-gray-400 max-w-md">
+            Browse every category available in our store in one place.
+          </p>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-24 gap-4">
-            <Loader2 className="animate-spin text-blue-600" size={36} />
-            <p className="text-gray-500">Loading categories…</p>
+            <Loader2 className="animate-spin text-black" size={36} />
+            <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">Loading categories…</p>
           </div>
         ) : (
-          <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-8 gap-4 sm:gap-6">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4 sm:gap-6">
             {allCategories.map((category, index) => (
               <Link
                 key={`${category.name}-${index}`}
                 href={`/dashboard/category/${(category as any).slug || category.name.toLowerCase().replace(/\s+/g, "-")}`}
-                className="group flex flex-col items-center gap-3 rounded-2xl border border-gray-100 bg-white p-4 shadow-sm transition-all duration-300 hover:-translate-y-1 hover:border-blue-200 hover:shadow-lg"
+                className="group flex flex-col items-center gap-3"
               >
-                <div className="relative h-16 w-16 overflow-hidden rounded-full border-2 border-gray-100 bg-gray-100 shadow-sm transition-all duration-300 group-hover:scale-110 group-hover:border-blue-200 sm:h-20 sm:w-20">
+                <div className="relative w-full aspect-square overflow-hidden bg-gray-100">
                   <Image
                     src={category.img}
                     alt={category.name}
                     fill
-                    sizes="(max-width: 640px) 64px, 80px"
-                    className="object-cover"
+                    sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
+                    className="object-cover group-hover:scale-110 transition-transform duration-500"
                   />
+                  <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
                 </div>
-                <p className="text-center text-sm font-medium text-gray-700 transition-colors group-hover:text-blue-600">
+                <p className="text-center text-sm font-black uppercase tracking-widest text-gray-800 group-hover:text-black transition-colors">
                   {category.name}
                 </p>
               </Link>
