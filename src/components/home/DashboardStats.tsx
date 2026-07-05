@@ -70,8 +70,8 @@ export default function DashboardStats() {
     return () => obs.disconnect();
   }, []);
 
-  const products = data?.products ?? [];
-  const totalProducts = data?.total ?? products.length;
+  const products = data?.pages?.flatMap((p: any) => p.products) ?? [];
+  const totalProducts = data?.pages?.[0]?.total ?? products.length;
   const categoryCount = Array.isArray(categories) ? categories.length : 0;
   const avgRating = products.length
     ? products.reduce((sum: number, p: any) => sum + (p.rating || 0), 0) /

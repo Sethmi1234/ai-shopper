@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import Image from "next/image";
-import { Heart, ShoppingCart, Star, Trash2, HeartOff, ChevronRight, ShoppingBag } from "lucide-react";
+import { Heart, ShoppingCart, Star, Trash2, HeartOff, ShoppingBag, ArrowLeft } from "lucide-react";
 import useWishlist from "@/store/useWishlist";
 import useCart from "@/store/useCart";
 import { useState } from "react";
@@ -31,143 +31,130 @@ export default function FavoritesPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc]">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <nav className="flex items-center gap-2 text-blue-200 text-sm mb-6">
-            <Link href="/dashboard" className="hover:text-white transition-colors">Home</Link>
-            <ChevronRight size={14} />
-            <span className="text-white font-medium">My Favorites</span>
-          </nav>
-
-          <div className="flex items-center justify-between">
+      <div className="bg-black text-white py-14 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto">
+          <Link href="/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-[#ccff00] transition-colors text-xs font-bold uppercase tracking-widest mb-4">
+            <ArrowLeft size={14} /> Back to Home
+          </Link>
+          <div className="flex items-end justify-between">
             <div>
-              <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight">My Favorites</h1>
-              <p className="text-blue-200 text-sm sm:text-base mt-1">
+              <p className="text-xs font-bold uppercase tracking-[0.3em] text-gray-400 mb-3">Your collection</p>
+              <h1 className="text-4xl md:text-5xl font-black uppercase tracking-tighter">My Favourites</h1>
+              <p className="text-gray-400 mt-2 text-sm">
                 {items.length} {items.length === 1 ? "item" : "items"} saved
               </p>
             </div>
             {items.length > 0 && (
               <button
                 onClick={clearWishlist}
-                className="flex items-center gap-2 px-4 py-2.5 rounded-full bg-white/10 backdrop-blur-sm text-white border border-white/20 text-sm font-medium hover:bg-white/20 transition-all"
+                className="flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border border-gray-600 text-gray-300 hover:border-white hover:text-white transition-colors"
               >
-                <Trash2 size={14} />
-                Clear all
+                <Trash2 size={14} /> Clear All
               </button>
             )}
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         {items.length === 0 ? (
           <div className="text-center py-24">
-            <div className="w-20 h-20 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-6">
-              <Heart size={36} className="text-gray-300" />
+            <div className="mx-auto mb-6 inline-flex h-20 w-20 items-center justify-center bg-black">
+              <Heart size={36} className="text-[#ccff00]" />
             </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">No favorites yet</h2>
-            <p className="text-gray-500 mb-8 max-w-md mx-auto">
-              Start browsing products and click the heart icon to save your favorite items here.
+            <h2 className="text-2xl font-black text-black uppercase tracking-tighter mb-3">No favourites yet</h2>
+            <p className="text-gray-500 mb-8 max-w-md mx-auto text-sm">
+              Start browsing products and click the heart icon to save your favourite items here.
             </p>
             <Link
               href="/dashboard/products"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-blue-600 text-white font-semibold hover:bg-blue-700 transition-all shadow-lg"
+              className="inline-flex items-center gap-2 bg-black text-[#ccff00] px-8 py-4 text-sm font-black uppercase tracking-widest hover:bg-gray-900 transition-colors"
             >
-              <ShoppingBag size={18} />
-              Browse Products
+              <ShoppingBag size={18} /> Browse Products
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 gap-y-10">
             {items.map((product: any) => (
               <div
                 key={product.id}
-                className="bg-white rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-red-100 hover:-translate-y-1 transition-all duration-300 overflow-hidden group"
+                className="bg-white group cursor-pointer"
               >
                 <Link href={`/dashboard/products/${product.id}`} className="block">
-                  {/* Image */}
-                  <div className="relative h-48 bg-gray-50">
+                  <div className="relative h-[280px] overflow-hidden bg-gray-50 mb-4">
                     <Image
                       src={product.thumbnail || "https://images.unsplash.com/photo-1579586337278-3befd40fd17a?auto=format&fit=crop&q=80&w=400&h=400"}
                       alt={product.title}
                       fill
-                      className="object-cover"
+                      className="object-cover group-hover:scale-105 transition-transform duration-700"
                       unoptimized
                     />
                     {/* Remove button */}
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        removeItem(product.id);
-                      }}
-                      className="absolute top-3 right-3 w-8 h-8 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-red-400 hover:text-red-600 hover:bg-white shadow-sm transition-all"
-                      title="Remove from favorites"
+                      onClick={(e) => { e.preventDefault(); removeItem(product.id); }}
+                      className="absolute top-3 right-3 bg-white p-2 text-black hover:bg-black hover:text-[#ccff00] transition-colors shadow-sm"
+                      title="Remove from favourites"
                     >
-                      <Trash2 size={14} />
+                      <HeartOff size={15} />
                     </button>
+
+                    {/* Hover Add to Cart */}
+                    <div className="absolute bottom-0 left-0 w-full p-4 flex gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 bg-gradient-to-t from-black/60 to-transparent">
+                      <button
+                        onClick={(e) => { e.preventDefault(); e.stopPropagation(); handleAddToCart(product); }}
+                        className={`flex-1 py-3 text-xs font-black uppercase tracking-wider transition-colors flex items-center justify-center gap-2 ${
+                          addedIds.has(product.id)
+                            ? "bg-[#ccff00] text-black"
+                            : "bg-white hover:bg-black hover:text-white text-black"
+                        }`}
+                      >
+                        <ShoppingCart size={14} />
+                        {addedIds.has(product.id) ? "Added!" : "Add to Cart"}
+                      </button>
+                    </div>
                   </div>
                 </Link>
 
                 {/* Info */}
-                <div className="p-4">
-                  <p className="text-xs font-medium text-blue-500 uppercase tracking-wide mb-1">
-                    {product.category ? (product.category.split("-").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")) : "General"}
+                <div className="px-1">
+                  <p className="text-gray-400 text-xs font-bold uppercase tracking-widest mb-1">
+                    {product.category
+                      ? product.category.split("-").map((w: string) => w.charAt(0).toUpperCase() + w.slice(1)).join(" ")
+                      : "General"}
                   </p>
                   <Link href={`/dashboard/products/${product.id}`}>
-                    <h3 className="font-bold text-gray-900 text-sm leading-snug mb-2 line-clamp-2 hover:text-blue-600 transition-colors">
+                    <h3 className="font-bold text-gray-900 text-sm leading-snug mb-2 line-clamp-2 hover:text-gray-600 transition-colors">
                       {product.title}
                     </h3>
                   </Link>
 
-                  {/* Rating */}
                   {product.rating && (
-                    <div className="flex items-center gap-1 mb-3">
+                    <div className="flex items-center gap-1 mb-2">
                       {[1, 2, 3, 4, 5].map((star) => (
                         <Star
                           key={star}
-                          size={12}
+                          size={11}
                           className={
                             star <= Math.round(product.rating)
-                              ? "text-orange-400 fill-orange-400"
+                              ? "text-black fill-black"
                               : "text-gray-200 fill-gray-200"
                           }
                         />
                       ))}
-                      <span className="text-xs text-gray-500 ml-1">{Number(product.rating).toFixed(1)}</span>
+                      <span className="text-xs text-gray-400 ml-1">{Number(product.rating).toFixed(1)}</span>
                     </div>
                   )}
 
-                  {/* Price + Actions */}
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="text-xl font-extrabold text-gray-900">
-                        ${Number(product.price).toFixed(2)}
-                      </p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          removeItem(product.id);
-                        }}
-                        className="text-xs text-red-500 hover:text-red-600 font-medium flex items-center gap-1 px-2 py-1 rounded-lg border border-red-200 hover:bg-red-50 transition-all"
-                      >
-                        <HeartOff size={12} />
-                        Remove
-                      </button>
-                      <button
-                        onClick={() => handleAddToCart(product)}
-                        className={`w-9 h-9 rounded-full flex items-center justify-center text-white transition-all ${
-                          addedIds.has(product.id)
-                            ? "bg-green-600"
-                            : "bg-blue-600 hover:bg-blue-700 hover:shadow-md"
-                        }`}
-                      >
-                        <ShoppingCart size={16} />
-                      </button>
-                    </div>
+                  <div className="flex items-center justify-between mt-2">
+                    <p className="text-lg font-black text-gray-900">${Number(product.price).toFixed(2)}</p>
+                    <button
+                      onClick={() => removeItem(product.id)}
+                      className="text-xs text-gray-400 hover:text-red-500 font-bold uppercase tracking-wider transition-colors"
+                    >
+                      Remove
+                    </button>
                   </div>
                 </div>
               </div>

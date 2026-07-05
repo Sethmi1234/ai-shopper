@@ -18,6 +18,8 @@ export default function DashboardLayout({
           {children}
         </div>
         <Footer />
+        
+        {/* Floating Chat Bot */}
         <ChatBot />
       </div>
     </AuthGuard>

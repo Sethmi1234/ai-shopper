@@ -155,17 +155,17 @@ Rules:
         {isOpen ? (
           <button
             onClick={() => setIsOpen(false)}
-            className="bg-gray-800 text-white p-4 rounded-full shadow-2xl hover:scale-105 hover:bg-gray-900 transition-all flex items-center justify-center"
+            className="bg-black text-[#ccff00] p-4 rounded-full shadow-2xl hover:scale-105 hover:bg-gray-900 transition-all flex items-center justify-center"
           >
             <X size={26} />
           </button>
         ) : (
           <button
             onClick={() => setIsOpen(true)}
-            className="bg-blue-600 text-white p-4 rounded-full shadow-2xl hover:scale-105 hover:bg-blue-700 transition-all flex items-center justify-center relative border border-blue-500/20"
+            className="bg-black text-[#ccff00] p-4 rounded-full shadow-2xl hover:scale-105 hover:bg-gray-900 transition-all flex items-center justify-center relative border border-[#ccff00]/20"
           >
             <BotMessageSquare size={26} />
-            <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-red-500 rounded-full border-2 border-white"></span>
+            <span className="absolute top-0 right-0 w-3.5 h-3.5 bg-[#ccff00] rounded-full border-2 border-black"></span>
           </button>
         )}
       </div>
@@ -174,13 +174,13 @@ Rules:
       {isOpen && (
         <div className="fixed right-8 bottom-24 z-50 w-[360px] max-w-[calc(100vw-32px)] bg-white rounded-2xl shadow-2xl border border-gray-200 flex flex-col overflow-hidden animate-slide-up">
           {/* Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white px-5 py-4 flex items-center gap-3">
-            <div className="w-9 h-9 rounded-full bg-white/20 flex items-center justify-center">
-              <Sparkles size={18} />
+          <div className="bg-black text-white px-5 py-4 flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-[#ccff00]/20 flex items-center justify-center">
+              <Sparkles size={18} className="text-[#ccff00]" />
             </div>
             <div className="flex-1 min-w-0">
               <p className="font-bold text-sm">AI Shopping Assistant</p>
-              <p className="text-xs text-blue-200">Online • Ask me anything!</p>
+              <p className="text-xs text-[#ccff00]/80">Online • Ask me anything!</p>
             </div>
           </div>
 
@@ -195,9 +195,9 @@ Rules:
               >
                 <div
                   className={`w-7 h-7 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
-                    msg.role === "user"
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-600"
+                      msg.role === "user"
+                        ? "bg-black text-[#ccff00]"
+                        : "bg-gray-200 text-gray-600"
                   }`}
                 >
                   {msg.role === "user" ? (
@@ -208,9 +208,9 @@ Rules:
                 </div>
                 <div
                   className={`rounded-2xl px-4 py-2.5 text-sm leading-relaxed max-w-[85%] whitespace-pre-wrap ${
-                    msg.role === "user"
-                      ? "bg-blue-600 text-white rounded-tr-sm"
-                      : "bg-white text-gray-700 border border-gray-100 shadow-sm rounded-tl-sm"
+                      msg.role === "user"
+                        ? "bg-black text-white rounded-tr-sm"
+                        : "bg-white text-gray-700 border border-gray-100 shadow-sm rounded-tl-sm"
                   }`}
                 >
                   {msg.text}
@@ -224,7 +224,7 @@ Rules:
                   <Sparkles size={13} />
                 </div>
                 <div className="bg-white border border-gray-100 shadow-sm rounded-2xl rounded-tl-sm px-4 py-3">
-                  <Loader2 className="animate-spin text-blue-600" size={18} />
+                  <Loader2 className="animate-spin text-black" size={18} />
                 </div>
               </div>
             )}
@@ -247,7 +247,7 @@ Rules:
               <button
                 onClick={handleSend}
                 disabled={!input.trim() || isLoading}
-                className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
+                className="w-8 h-8 rounded-full bg-black text-[#ccff00] flex items-center justify-center hover:bg-gray-900 disabled:opacity-40 disabled:cursor-not-allowed transition-all shrink-0"
               >
                 <Send size={14} />
               </button>

@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import useCart from "@/store/useCart";
-import { ChevronRight, ShoppingCart, X, Minus, Plus, CreditCard, Truck, Shield, CheckCircle } from "lucide-react";
+import { ShoppingCart, X, Minus, Plus, CreditCard, Truck, Shield, CheckCircle, ArrowLeft } from "lucide-react";
 
 export default function CartPage() {
   const items = useCart((state) => state.items);
@@ -11,168 +11,168 @@ export default function CartPage() {
   const removeItem = useCart((state) => state.removeItem);
   const clearCart = useCart((state) => state.clearCart);
 
-  const total = items.reduce((sum, item) => sum + item.quantity * Number(item.price || 0), 0);
+  const subtotal = items.reduce((sum, item) => sum + item.quantity * Number(item.price || 0), 0);
+  const shipping = subtotal > 50 ? 0 : 9.99;
+  const total = subtotal + shipping;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc] py-10">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start lg:gap-8">
-          <div className="flex-1 bg-white rounded-3xl border border-gray-100 shadow-sm p-6 md:p-8">
-            <div className="flex items-center justify-between gap-4 mb-8">
-              <div>
-                <p className="text-sm text-gray-500">Shopping Cart</p>
-                <h1 className="text-3xl font-bold text-gray-900">Your Cart</h1>
-              </div>
-              <div className="text-right">
-                <p className="text-sm text-gray-500">{itemCount} items</p>
-                <p className="text-lg font-semibold text-gray-900">${total.toFixed(2)}</p>
-              </div>
+    <div className="min-h-screen bg-gray-50">
+      {/* Page Header */}
+      <div className="bg-black text-white py-10 px-4 sm:px-8">
+        <div className="max-w-7xl mx-auto">
+          <Link href="/dashboard" className="flex items-center gap-2 text-gray-400 hover:text-[#ccff00] transition-colors text-xs font-bold uppercase tracking-widest mb-4">
+            <ArrowLeft size={14} /> Continue Shopping
+          </Link>
+          <h1 className="text-3xl md:text-4xl font-black uppercase tracking-tighter">Your Cart</h1>
+          <p className="text-gray-400 mt-1 text-sm">{itemCount} {itemCount === 1 ? "item" : "items"}</p>
+        </div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {items.length === 0 ? (
+          <div className="text-center py-24">
+            <div className="mx-auto mb-6 inline-flex h-20 w-20 items-center justify-center bg-black text-[#ccff00]">
+              <ShoppingCart size={36} />
             </div>
-
-            {items.length === 0 ? (
-              <div className="text-center py-16">
-                <div className="mx-auto mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-50 text-blue-600">
-                  <ShoppingCart size={28} />
-                </div>
-                <h2 className="text-xl font-semibold text-gray-900">Your cart is empty</h2>
-                <p className="mt-3 text-sm text-gray-500">
-                  Add items from the products page and they will appear here.
-                </p>
-                <Link href="/dashboard/products" className="mt-6 inline-flex rounded-full bg-blue-600 px-6 py-3 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors">
-                  Continue shopping
-                </Link>
+            <h2 className="text-2xl font-black text-black uppercase tracking-tight mb-3">Your cart is empty</h2>
+            <p className="text-gray-500 text-sm mb-8">Add items from the products page and they will appear here.</p>
+            <Link
+              href="/dashboard/products"
+              className="inline-block bg-black text-[#ccff00] px-8 py-4 text-sm font-black uppercase tracking-widest hover:bg-gray-900 transition-colors"
+            >
+              Shop Now
+            </Link>
+          </div>
+        ) : (
+          <div className="flex flex-col lg:flex-row gap-8 items-start">
+            {/* Cart Items */}
+            <div className="flex-1 flex flex-col gap-4">
+              {/* Header Row */}
+              <div className="hidden md:grid grid-cols-[2fr_1fr_1fr_1fr] gap-4 text-xs font-black uppercase tracking-widest text-gray-500 border-b border-gray-200 pb-3">
+                <span>Product</span>
+                <span className="text-center">Qty</span>
+                <span className="text-center">Price</span>
+                <span className="text-right">Subtotal</span>
               </div>
-            ) : (
-              <div className="space-y-6">
-                <div className="grid gap-4">
-                  {items.map((item) => (
-                    <div key={item.id} className="grid grid-cols-[auto_1fr] gap-4 rounded-3xl border border-gray-100 bg-gray-50 p-4">
-                      <div className="relative h-28 w-28 overflow-hidden rounded-3xl bg-white">
-                        {item.thumbnail ? (
-                          <Image src={item.thumbnail} alt={item.title} fill className="object-cover" unoptimized />
-                        ) : (
-                          <div className="h-full w-full bg-gray-200" />
-                        )}
-                      </div>
-                      <div className="flex flex-col justify-between gap-4">
-                        <div>
-                          <h2 className="text-lg font-semibold text-gray-900">{item.title}</h2>
-                          <p className="text-sm text-gray-500 capitalize">{item.category || "Product"}</p>
-                          <p className="mt-3 text-base font-semibold text-gray-900">${Number(item.price).toFixed(2)}</p>
-                        </div>
-                        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                          <div className="flex items-center rounded-full border border-gray-200 bg-white p-1 shadow-sm">
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity - 1)}
-                              className="h-9 w-9 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
-                            >
-                              <Minus size={16} />
-                            </button>
-                            <span className="mx-3 font-semibold text-gray-900">{item.quantity}</span>
-                            <button
-                              onClick={() => updateQuantity(item.id, item.quantity + 1)}
-                              className="h-9 w-9 rounded-full text-gray-500 hover:bg-gray-100 transition-colors"
-                            >
-                              <Plus size={16} />
-                            </button>
-                          </div>
-                          <div className="flex items-center gap-3 text-sm text-gray-500">
-                            <button
-                              onClick={() => removeItem(item.id)}
-                              className="font-semibold text-red-600 hover:text-red-700"
-                            >
-                              Remove
-                            </button>
-                            <span className="text-gray-400">|</span>
-                            <span className="font-medium text-gray-800">Subtotal:</span>
-                            <span className="font-semibold text-gray-900">${(item.quantity * Number(item.price)).toFixed(2)}</span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
 
-                <div className="rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                    <div>
-                      <p className="text-sm text-gray-500">Order total</p>
-                      <p className="text-3xl font-bold text-gray-900">${total.toFixed(2)}</p>
+              {items.map((item) => (
+                <div key={item.id} className="bg-white border border-gray-100 p-4 md:p-6 flex flex-col md:grid md:grid-cols-[2fr_1fr_1fr_1fr] gap-4 items-center">
+                  {/* Product info */}
+                  <div className="flex items-center gap-4 w-full md:w-auto">
+                    <div className="relative h-20 w-20 shrink-0 overflow-hidden bg-gray-100">
+                      {item.thumbnail ? (
+                        <Image src={item.thumbnail} alt={item.title} fill className="object-cover" unoptimized />
+                      ) : (
+                        <div className="h-full w-full bg-gray-200" />
+                      )}
                     </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">{item.category || "Product"}</p>
+                      <h2 className="font-bold text-gray-900 text-sm line-clamp-2">{item.title}</h2>
+                      <button
+                        onClick={() => removeItem(item.id)}
+                        className="mt-2 text-xs text-red-500 hover:text-red-700 font-bold uppercase tracking-wider"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Quantity */}
+                  <div className="flex items-center justify-center gap-2 border border-gray-200 bg-gray-50 w-fit mx-auto">
                     <button
-                      onClick={() => clearCart()}
-                      className="inline-flex items-center justify-center gap-2 rounded-full border border-red-200 bg-red-50 px-5 py-3 text-sm font-semibold text-red-700 hover:bg-red-100 transition-colors"
+                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-black hover:text-white transition-colors"
                     >
-                      <X size={16} /> Clear Cart
+                      <Minus size={14} />
+                    </button>
+                    <span className="w-8 text-center font-black text-sm">{item.quantity}</span>
+                    <button
+                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-black hover:text-white transition-colors"
+                    >
+                      <Plus size={14} />
                     </button>
                   </div>
+
+                  {/* Price */}
+                  <p className="text-center font-bold text-gray-900">${Number(item.price).toFixed(2)}</p>
+
+                  {/* Subtotal */}
+                  <p className="text-right font-black text-gray-900 text-lg">
+                    ${(item.quantity * Number(item.price)).toFixed(2)}
+                  </p>
+                </div>
+              ))}
+
+              {/* Clear Cart */}
+              <div className="flex justify-end">
+                <button
+                  onClick={clearCart}
+                  className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-red-500 hover:text-red-700 transition-colors"
+                >
+                  <X size={14} /> Clear Cart
+                </button>
+              </div>
+            </div>
+
+            {/* Order Summary */}
+            <aside className="w-full lg:w-96 shrink-0 bg-white border border-gray-100 p-6">
+              <h2 className="text-lg font-black uppercase tracking-tighter text-black mb-6">Order Summary</h2>
+
+              <div className="space-y-3 mb-6 text-sm">
+                <div className="flex justify-between text-gray-600">
+                  <span>Subtotal ({itemCount} items)</span>
+                  <span className="font-bold text-black">${subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between text-gray-600">
+                  <span>Shipping</span>
+                  <span className="font-bold text-black">
+                    {shipping === 0 ? <span className="text-green-600">FREE</span> : `$${shipping.toFixed(2)}`}
+                  </span>
+                </div>
+                {shipping > 0 && (
+                  <p className="text-xs text-gray-400">Free shipping on orders over $50</p>
+                )}
+                <div className="border-t border-gray-200 pt-3 flex justify-between text-black font-black text-lg">
+                  <span>Total</span>
+                  <span>${total.toFixed(2)}</span>
                 </div>
               </div>
-            )}
+
+              <button
+                type="button"
+                className="w-full bg-black text-[#ccff00] py-4 text-sm font-black uppercase tracking-widest hover:bg-gray-900 transition-colors mb-4"
+              >
+                Proceed to Checkout
+              </button>
+
+              <Link
+                href="/dashboard/products"
+                className="block w-full text-center border border-black text-black py-4 text-sm font-black uppercase tracking-widest hover:bg-black hover:text-white transition-colors"
+              >
+                Continue Shopping
+              </Link>
+
+              {/* Trust badges */}
+              <div className="mt-6 space-y-3">
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <Truck size={16} className="text-black shrink-0" />
+                  <span>Free delivery on orders over $50</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <Shield size={16} className="text-black shrink-0" />
+                  <span>Secure payment. 100% encrypted.</span>
+                </div>
+                <div className="flex items-center gap-3 text-xs text-gray-500">
+                  <CheckCircle size={16} className="text-black shrink-0" />
+                  <span>100-day hassle-free returns</span>
+                </div>
+              </div>
+            </aside>
           </div>
-
-          <aside className="w-full max-w-md flex-shrink-0 rounded-3xl border border-gray-100 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-100 text-blue-600">
-                <CreditCard size={20} />
-              </div>
-              <div>
-                <p className="text-sm text-gray-500">Secure checkout</p>
-                <h2 className="text-lg font-semibold text-gray-900">Ready to pay</h2>
-              </div>
-            </div>
-
-            <div className="space-y-4 mb-6">
-              <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
-                <div className="flex items-center gap-3 text-gray-700 mb-3">
-                  <Truck size={18} />
-                  <p className="text-sm font-semibold">Free delivery</p>
-                </div>
-                <p className="text-sm text-gray-500">Orders over $50 ship free within the US.</p>
-              </div>
-
-              <div className="rounded-3xl border border-gray-100 bg-gray-50 p-4">
-                <div className="flex items-center gap-3 text-gray-700 mb-3">
-                  <Shield size={18} />
-                  <p className="text-sm font-semibold">Secure payment</p>
-                </div>
-                <p className="text-sm text-gray-500">We use Stripe-level security for every payment.</p>
-              </div>
-            </div>
-
-            <div className="rounded-3xl border border-gray-100 bg-blue-50 p-5">
-              <p className="text-sm text-blue-700 font-semibold">Payment info</p>
-              <p className="mt-3 text-sm text-gray-600">Enter your details on checkout to complete your purchase.</p>
-              <div className="mt-4 space-y-3">
-                <div className="rounded-2xl bg-white p-3 border border-gray-200">
-                  <p className="text-xs uppercase tracking-[0.2em] text-gray-400">Card</p>
-                  <p className="mt-2 text-base font-semibold text-gray-900">**** **** **** 4242</p>
-                </div>
-                <div className="rounded-2xl bg-white p-3 border border-gray-200">
-                  <p className="text-xs uppercase tracking-[0.2em] text-gray-400">Billing</p>
-                  <p className="mt-2 text-base font-semibold text-gray-900">Use saved card during checkout</p>
-                </div>
-              </div>
-            </div>
-
-            <button
-              type="button"
-              disabled={items.length === 0}
-              className="mt-6 w-full rounded-full bg-blue-600 px-5 py-4 text-sm font-semibold text-white shadow-lg transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-            >
-              {items.length === 0 ? "Cart empty" : "Proceed to Checkout"}
-            </button>
-
-            <div className="mt-6 rounded-3xl bg-green-50 p-4 text-sm text-green-700">
-              <div className="flex items-center gap-2 font-semibold">
-                <CheckCircle size={16} />
-                <span>Instant payment preview</span>
-              </div>
-              <p className="mt-2 text-gray-600">No real payment is processed in this demo UI.</p>
-            </div>
-          </aside>
-        </div>
+        )}
       </div>
     </div>
   );
