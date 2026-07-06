@@ -8,8 +8,10 @@ import {
   Loader2,
   Sparkles,
   User,
+  Heart,
 } from "lucide-react";
 import Link from "next/link";
+import { useWishlist } from "@/store/useWishlist";
 
 type Message = {
   role: "user" | "assistant";
@@ -81,6 +83,7 @@ export default function ChatBot() {
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const { toggleItem, isWishlisted } = useWishlist();
 
   useEffect(() => {
     if (isOpen) {
@@ -275,25 +278,52 @@ export default function ChatBot() {
                   {msg.text}
                   {msg.products && msg.products.length > 0 && (
                     <div className="mt-3 space-y-2 whitespace-normal">
-                      {msg.products.map((product) => (
-                        <Link
-                          key={product.id}
-                          href={`/dashboard/products/${product.id}`}
-                          className="block rounded-xl border border-gray-100 bg-gray-50 p-2 hover:border-gray-300 transition-colors"
-                        >
-                          <p className="text-xs font-bold text-gray-900 line-clamp-1">
-                            {product.title}
-                          </p>
-                          <div className="mt-1 flex items-center justify-between gap-2">
-                            <span className="text-[11px] text-gray-500 line-clamp-1">
-                              {product.category || "Product"}
-                            </span>
-                            <span className="text-xs font-black text-black">
-                              ${product.price}
-                            </span>
+                      {msg.products.map((product) => {
+                        const wishlisted = isWishlisted(product.id);
+                        return (
+                          <div
+                            key={product.id}
+                            className="relative rounded-xl border border-gray-100 bg-gray-50 p-2 hover:border-gray-300 transition-colors"
+                          >
+                            <Link
+                              href={`/dashboard/products/${product.id}`}
+                              className="block"
+                            >
+                              <p className="text-xs font-bold text-gray-900 line-clamp-1 pr-6">
+                                {product.title}
+                              </p>
+                              <div className="mt-1 flex items-center justify-between gap-2">
+                                <span className="text-[11px] text-gray-500 line-clamp-1">
+                                  {product.category || "Product"}
+                                </span>
+                                <span className="text-xs font-black text-black">
+                                  ${product.price}
+                                </span>
+                              </div>
+                            </Link>
+                            <button
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                toggleItem({
+                                  id: product.id,
+                                  title: product.title,
+                                  price: product.price,
+                                  thumbnail: product.thumbnail,
+                                  category: product.category,
+                                });
+                              }}
+                              className="absolute top-2 right-2 w-6 h-6 rounded-full bg-white shadow-sm flex items-center justify-center hover:scale-110 transition-transform"
+                              title={wishlisted ? "Remove from favorites" : "Add to favorites"}
+                            >
+                              <Heart
+                                size={12}
+                                className={wishlisted ? "fill-red-500 text-red-500" : "text-gray-400"}
+                              />
+                            </button>
                           </div>
-                        </Link>
-                      ))}
+                        );
+                      })}
                     </div>
                   )}
                 </div>

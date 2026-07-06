@@ -1,8 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Loader2, Sparkles } from "lucide-react";
+import { Loader2, Sparkles, Heart } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
+import { useWishlist } from "@/store/useWishlist";
 
 type Props = {
   prompt: string;
@@ -22,6 +23,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
   const [error, setError] = useState<string | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const { toggleItem, isWishlisted } = useWishlist();
 
   const run = async (text: string) => {
     if (!text.trim()) return;
