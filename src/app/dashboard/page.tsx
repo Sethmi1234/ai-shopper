@@ -8,7 +8,6 @@ import AISearch from "@/components/home/AISearch";
 import HomeInfoSection from "@/components/home/HomeInfoSection";
 import ServicesSection from "@/components/home/ServicesSection";
 import AboutSection from "@/components/home/AboutSection";
-import BlogSection from "@/components/home/BlogSection";
 
 export default function DashboardPage() {
   return (
@@ -27,7 +26,6 @@ export default function DashboardPage() {
       <HomeInfoSection />
       <ServicesSection />
       <AboutSection />
-      <BlogSection />
     </div>
   );
 }
