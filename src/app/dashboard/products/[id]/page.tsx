@@ -108,9 +108,9 @@ export default function ProductDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fc] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="animate-spin text-blue-600" size={44} />
+          <Loader2 className="animate-spin text-black" size={44} />
           <p className="text-gray-400 text-sm">Loading product…</p>
         </div>
       </div>
@@ -119,12 +119,12 @@ export default function ProductDetailPage() {
 
   if (error || !product) {
     return (
-      <div className="min-h-screen bg-[#f8f9fc] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 font-medium text-lg">Product not found.</p>
           <Link
             href="/dashboard"
-            className="mt-4 inline-block text-blue-600 underline text-sm"
+            className="mt-4 inline-block text-black underline text-sm"
           >
             Go back home
           </Link>
@@ -145,14 +145,14 @@ export default function ProductDetailPage() {
     : 128;
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc]">
+    <div className="min-h-screen bg-white">
       {/* Breadcrumb */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <nav className="flex items-center gap-2 text-sm text-gray-400 flex-wrap">
             <Link
               href="/dashboard"
-              className="hover:text-blue-600 transition-colors font-medium"
+              className="hover:text-gray-700 transition-colors font-medium"
             >
               Home
             </Link>
@@ -161,7 +161,7 @@ export default function ProductDetailPage() {
               <>
                 <Link
                   href={`/dashboard/category/${product.category}`}
-                  className="hover:text-blue-600 transition-colors capitalize font-medium"
+                  className="hover:text-gray-700 transition-colors capitalize font-medium"
                 >
                   {formatCategoryName(product.category)}
                 </Link>
@@ -194,7 +194,7 @@ export default function ProductDetailPage() {
               )}
 
               {/* AI Recommended badge */}
-              <div className="absolute top-4 left-4 bg-blue-600 text-white px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-md">
+              <div className="absolute top-4 left-4 bg-black text-[#ccff00] px-3 py-1.5 rounded-full text-xs font-semibold flex items-center gap-1.5 shadow-md">
                 <Sparkles size={12} />
                 AI Recommended
               </div>
@@ -209,7 +209,7 @@ export default function ProductDetailPage() {
               {/* Wishlist */}
               <button
                 onClick={handleToggleWishlist}
-                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-blue-600 shadow-md flex items-center justify-center hover:scale-110 hover:bg-blue-700 transition-transform"
+                className="absolute top-4 right-4 w-10 h-10 rounded-full bg-black shadow-md flex items-center justify-center hover:scale-110 hover:bg-gray-800 transition-transform"
               >
                 <Heart
                   size={18}
@@ -222,7 +222,7 @@ export default function ProductDetailPage() {
               {/* Share */}
               <button
                 onClick={() => setShareOpen(true)}
-                className="absolute bottom-4 right-4 w-9 h-9 rounded-full bg-blue-600 shadow flex items-center justify-center text-white hover:bg-blue-700 transition-colors"
+                className="absolute bottom-4 right-4 w-9 h-9 rounded-full bg-black shadow flex items-center justify-center text-white hover:bg-gray-800 transition-colors"
               >
                 <Share2 size={16} />
               </button>
@@ -232,13 +232,13 @@ export default function ProductDetailPage() {
                 <>
                   <button
                     onClick={prevImage}
-                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center text-gray-500 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all"
+                    className="absolute left-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center text-gray-500 hover:text-black opacity-0 group-hover:opacity-100 transition-all"
                   >
                     <ChevronLeft size={18} />
                   </button>
                   <button
                     onClick={nextImage}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center text-gray-500 hover:text-blue-600 opacity-0 group-hover:opacity-100 transition-all"
+                    className="absolute right-3 top-1/2 -translate-y-1/2 w-9 h-9 rounded-full bg-white shadow-md flex items-center justify-center text-gray-500 hover:text-black opacity-0 group-hover:opacity-100 transition-all"
                   >
                     <ChevronRightIcon size={18} />
                   </button>
@@ -255,8 +255,8 @@ export default function ProductDetailPage() {
                     onClick={() => setSelectedImage(i)}
                     className={`relative w-20 h-20 shrink-0 rounded-2xl overflow-hidden border-2 transition-all ${
                       selectedImage === i
-                        ? "border-blue-600 shadow-md shadow-blue-100"
-                        : "border-gray-200 hover:border-blue-300"
+                        ? "border-black shadow-md shadow-gray-100"
+                        : "border-gray-200 hover:border-gray-400"
                     }`}
                   >
                     <Image
@@ -277,7 +277,7 @@ export default function ProductDetailPage() {
             {/* Brand + Title */}
             <div>
               {product.brand && (
-                <p className="text-blue-600 font-semibold text-sm mb-1 uppercase tracking-wide">
+                <p className="text-gray-700 font-semibold text-sm mb-1 uppercase tracking-wide">
                   {product.brand}
                 </p>
               )}
@@ -291,7 +291,7 @@ export default function ProductDetailPage() {
                 <span className="font-bold text-gray-800">
                   {Number(product.rating).toFixed(1)}
                 </span>
-                <span className="text-blue-600 font-medium text-sm underline cursor-pointer">
+                <span className="text-gray-500 font-medium text-sm underline cursor-pointer">
                   {reviewCount} Reviews
                 </span>
                 {product.stock > 0 ? (
@@ -422,7 +422,7 @@ export default function ProductDetailPage() {
                   className={`flex-1 py-4 rounded-full font-bold text-base flex items-center justify-center gap-2.5 transition-all shadow-lg ${
                     addedToCart
                       ? "bg-green-600 text-white shadow-green-200"
-                      : "bg-blue-600 text-white hover:bg-blue-700 shadow-blue-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
+                      : "bg-black text-white hover:bg-gray-800 shadow-gray-200 hover:shadow-xl hover:-translate-y-0.5 active:translate-y-0"
                   } disabled:opacity-40 disabled:cursor-not-allowed`}
                 >
                   {addedToCart ? (
@@ -437,7 +437,7 @@ export default function ProductDetailPage() {
                     </>
                   )}
                 </button>
-                <button className="flex-1 py-4 rounded-full font-bold text-base border-2 border-blue-600 text-blue-600 hover:bg-blue-50 transition-colors">
+                <button className="flex-1 py-4 rounded-full font-bold text-base border-2 border-black text-black hover:bg-gray-50 transition-colors">
                   Buy Now
                 </button>
               </div>
@@ -465,9 +465,9 @@ export default function ProductDetailPage() {
               ].map(({ icon: Icon, label, sub }) => (
                 <div
                   key={label}
-                  className="flex flex-col items-center gap-1.5 bg-blue-50/60 rounded-2xl p-3 text-center"
+                  className="flex flex-col items-center gap-1.5 bg-gray-50 rounded-2xl p-3 text-center"
                 >
-                  <Icon size={20} className="text-blue-600" />
+                  <Icon size={20} className="text-black" />
                   <p className="text-xs font-semibold text-gray-700">{label}</p>
                   <p className="text-[10px] text-gray-400">{sub}</p>
                 </div>
@@ -486,7 +486,7 @@ export default function ProductDetailPage() {
               {product.reviews.map((review: any, i: number) => (
                 <div
                   key={i}
-                  className="bg-white rounded-2xl p-5 border border-gray-100 shadow-sm"
+                  className="bg-white rounded-2xl p-5 border border-gray-200 shadow-sm hover:border-[#ccff00] hover:shadow-md transition-all"
                   style={{ animation: `fadeInUp 0.3s ease ${i * 0.07}s both` }}
                 >
                   <div className="flex items-start justify-between mb-3">

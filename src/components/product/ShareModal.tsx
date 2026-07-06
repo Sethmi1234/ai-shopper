@@ -116,8 +116,8 @@ export default function ShareModal({ isOpen, onClose, product }: ShareModalProps
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">
-          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
-            <Share2 size={18} className="text-blue-600" />
+          <div className="w-10 h-10 rounded-full bg-gray-100 flex items-center justify-center">
+            <Share2 size={18} className="text-black" />
           </div>
           <div>
             <h3 className="font-bold text-gray-900 text-base">Share this product</h3>
@@ -151,7 +151,7 @@ export default function ShareModal({ isOpen, onClose, product }: ShareModalProps
         {/* Copy Link */}
         <button
           onClick={handleCopyLink}
-          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-gray-200 hover:border-blue-200 hover:bg-blue-50 transition-all"
+          className="w-full flex items-center gap-3 px-4 py-3 rounded-2xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-all"
         >
           <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
             {copied ? (
