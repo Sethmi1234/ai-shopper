@@ -57,7 +57,7 @@
 | **Zustand 5** | State management (cart, wishlist) |
 | **TanStack React Query 5** | Server state & caching |
 | **Axios** | HTTP client with interceptors |
-| **NVIDIA Llama 3.3 API** | AI chat & product search |
+| **NVIDIA Mistral Large 3 API** | AI chat & product search |
 | **DummyJSON API** | Product data source |
 | **Lucide React** | Icon library |
 
@@ -90,7 +90,7 @@ Create a `.env` file in the root directory:
 ```env
 NEXT_PUBLIC_BASE_URL=https://dummyjson.com
 NVIDIA_API_KEY=nvapi-your-key-here
-NVIDIA_MODEL=meta/llama-3.3-70b-instruct
+NVIDIA_MODEL=mistralai/mistral-large-3-675b-instruct-2512
 NVIDIA_BUILD_URL=https://integrate.api.nvidia.com/v1
 ```
 
@@ -193,7 +193,9 @@ ai-shopper/
 - `POST /auth/login` — User authentication
 
 ### NVIDIA AI (Optional)
-- `POST /api/ai/recommend` — Proxy to NVIDIA's Llama 3.3 API for AI-powered chat and search
+- `POST /api/ai/recommend` — Proxy to NVIDIA's Mistral Large 3 API for AI-powered chat and search
+- **Architecture**: System prompt built on backend, never exposed to frontend
+- **Structured Output**: AI always returns JSON for deterministic frontend behavior
 
 ---
 

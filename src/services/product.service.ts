@@ -3,6 +3,11 @@ import api from "@/lib/axios";
 export type ProductSearchSpec = {
   category?: string | null;
   maxPrice?: number | null;
+  minPrice?: number | null;
+  brand?: string | null;
+  query?: string | null;
+  color?: string | null;
+  purpose?: string | null;
   keywords?: string[] | null;
 };
 
@@ -147,12 +152,17 @@ function parsePromptToSpec(prompt: string): ProductSearchSpec {
 function filterProducts(
   products: any[],
   maxPrice?: number | null,
-  keywords?: string[] | null
+  keywords?: string[] | null,
+  minPrice?: number | null
 ) {
   let filtered = products;
 
   if (maxPrice != null && !Number.isNaN(Number(maxPrice))) {
     filtered = filtered.filter((p) => Number(p.price) <= Number(maxPrice));
+  }
+
+  if (minPrice != null && !Number.isNaN(Number(minPrice))) {
+    filtered = filtered.filter((p) => Number(p.price) >= Number(minPrice));
   }
 
   if (keywords?.length) {
@@ -166,14 +176,29 @@ function filterProducts(
 }
 
 export const searchProductsBySpec = async (spec: ProductSearchSpec) => {
-  const { maxPrice, keywords } = spec;
+  const { maxPrice, minPrice } = spec;
   const category = normalizeCategory(spec.category);
+  const keywordParts = [
+    ...(spec.keywords || []),
+    spec.brand,
+    spec.query,
+    spec.color,
+    spec.purpose,
+  ]
+    .filter((item): item is string => typeof item === "string" && item.trim().length > 0)
+    .flatMap((item) => item.toLowerCase().split(/\s+/))
+    .filter((item) => item.length > 2 && !STOP_WORDS.has(item));
+  const keywords = Array.from(new Set(keywordParts));
 
   if (category) {
     try {
       const res = await api.get(`/products/category/${encodeURIComponent(category)}`);
-      const products = filterProducts(res.data?.products || [], maxPrice, keywords);
+      const categoryProducts = res.data?.products || [];
+      const products = filterProducts(categoryProducts, maxPrice, keywords, minPrice);
       if (products.length > 0) return { products };
+
+      const priceOnlyProducts = filterProducts(categoryProducts, maxPrice, null, minPrice);
+      if (priceOnlyProducts.length > 0) return { products: priceOnlyProducts };
     } catch {
       // Fall through to search if category slug is invalid
     }
@@ -183,7 +208,7 @@ export const searchProductsBySpec = async (spec: ProductSearchSpec) => {
   if (q) {
     try {
       const res = await api.get(`/products/search?q=${encodeURIComponent(q)}`);
-      const products = filterProducts(res.data?.products || [], maxPrice, keywords);
+      const products = filterProducts(res.data?.products || [], maxPrice, keywords, minPrice);
       if (products.length > 0) return { products };
     } catch {
       // Fall through to full catalog search
@@ -191,7 +216,7 @@ export const searchProductsBySpec = async (spec: ProductSearchSpec) => {
   }
 
   const res = await api.get("/products?limit=100");
-  const products = filterProducts(res.data?.products || [], maxPrice, keywords);
+  const products = filterProducts(res.data?.products || [], maxPrice, keywords, minPrice);
   return { products };
 };
 

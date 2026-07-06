@@ -18,59 +18,72 @@ function reviewCount(p: { reviews?: unknown }) {
   return 42;
 }
 
+function aiFiltersToSpec(filters: {
+  category: string;
+  brand: string;
+  query: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  color: string;
+  purpose: string;
+}) {
+  return {
+    category: filters.category || null,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    brand: filters.brand || null,
+    query: filters.query || null,
+    color: filters.color || null,
+    purpose: filters.purpose || null,
+    keywords: [
+      filters.brand,
+      filters.query,
+      filters.color,
+      filters.purpose,
+    ].filter(Boolean),
+  };
+}
+
 export default function AiRecommend({ prompt, runKey = 0, compact = false }: Props) {
   const [localPrompt, setLocalPrompt] = useState(prompt);
   const [products, setProducts] = useState<any[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [aiReply, setAiReply] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const run = async (text: string) => {
     if (!text.trim()) return;
 
     setError(null);
+    setAiReply(null);
     setProducts([]);
     setIsLoading(true);
 
     try {
-      // Step 1: Use NVIDIA AI to extract structured search spec from natural language
-      const systemPrompt = `You are a product search assistant. Given a user's natural language request, extract the following as valid JSON (no markdown, no backticks, just raw JSON):
-{
-  "category": "best matching category slug or null",
-  "keywords": ["array", "of", "relevant", "search", "keywords"],
-  "maxPrice": null or number
-}
-Available categories: beauty, fragrances, furniture, womens-bags, laptops, smartphones, mobile-accessories, home-decoration, kitchen-accessories, mens-shirts, mens-shoes, womens-dresses, womens-watches, womens-jewellery, sunglasses, tablets, groceries, sports-accessories, motorcycle, vehicle, skin-care, tops.
+      // Frontend sends ONLY: message (text)
+      // System prompt is built on backend - never exposed to frontend
+      const aiResult = await requestAiStructuredOutput(text.trim());
+      const decision = aiResult.data;
 
-If the user asks for something like "gaming laptops under $1000", extract category "laptops", keywords ["gaming", "laptop"], maxPrice 1000.
-If "Skincare for dry skin", extract category "skin-care", keywords ["skincare", "dry", "skin"], maxPrice null.
-If "Gifts for tech lovers", extract category "mobile-accessories", keywords ["tech", "gadgets"], maxPrice null.`;
-
-      let spec: { category?: string | null; keywords?: string[] | null; maxPrice?: number | null } | null = null;
-      
-      // Try NVIDIA first
-      const aiResult = await requestAiStructuredOutput(text.trim(), systemPrompt);
-      
-      if (aiResult.data?.choices?.[0]?.message?.content) {
-        try {
-          const content = aiResult.data.choices[0].message.content.trim();
-          // Remove any markdown code block wrapping
-          const cleaned = content.replace(/```json\s*/gi, "").replace(/```\s*$/g, "").trim();
-          const parsed = JSON.parse(cleaned);
-          spec = {
-            category: parsed.category || null,
-            keywords: Array.isArray(parsed.keywords) ? parsed.keywords : null,
-            maxPrice: typeof parsed.maxPrice === "number" ? parsed.maxPrice : null,
-          };
-        } catch {
-          // Fall through to DummyJSON parsing if AI JSON is malformed
-        }
+      if (aiResult.error || !decision) {
+        throw new Error(aiResult.error || "AI did not return a structured response.");
       }
 
-      // Step 2: Search DummyJSON using extracted spec, or fallback to prompt-based search
+      if (!decision.requiresApiCall || decision.needsMoreInformation) {
+        setAiReply(decision.reply);
+        return;
+      }
+
       const { searchProductsByPrompt } = await import("@/services/product.service");
       
       let result;
-      if (spec && (spec.category || spec.keywords?.length || spec.maxPrice != null)) {
+      const spec = aiFiltersToSpec(decision.filters);
+      if (
+        spec.category ||
+        spec.keywords.length ||
+        spec.maxPrice != null ||
+        spec.minPrice != null
+      ) {
         result = await searchProductsBySpec(spec);
       } else {
         result = await searchProductsByPrompt(text.trim());
@@ -80,6 +93,7 @@ If "Gifts for tech lovers", extract category "mobile-accessories", keywords ["te
       if (nextProducts.length === 0) {
         setError("No products matched your request. Try a different description.");
       } else {
+        setAiReply(decision.reply);
         setProducts(nextProducts);
       }
     } catch (e: unknown) {
@@ -186,6 +200,7 @@ If "Gifts for tech lovers", extract category "mobile-accessories", keywords ["te
             setLocalPrompt("");
             setProducts([]);
             setError(null);
+            setAiReply(null);
           }}
           className="px-4 py-2 rounded-full border"
         >
@@ -196,6 +211,12 @@ If "Gifts for tech lovers", extract category "mobile-accessories", keywords ["te
       {error && (
         <p className="mt-3 text-red-500">
           {error}
+        </p>
+      )}
+
+      {!error && aiReply && (
+        <p className="mt-3 text-sm text-gray-600">
+          {aiReply}
         </p>
       )}
 

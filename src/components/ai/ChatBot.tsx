@@ -9,11 +9,20 @@ import {
   Sparkles,
   User,
 } from "lucide-react";
-import { requestAiStructuredOutput } from "@/services/ai.service";
+import Link from "next/link";
+import { requestAiStructuredOutput, ShoppingAiResponse } from "@/services/ai.service";
+import { getProducts, searchProductsBySpec } from "@/services/product.service";
 
 type Message = {
   role: "user" | "assistant";
   text: string;
+  products?: Array<{
+    id: number;
+    title: string;
+    price: number;
+    category?: string;
+    thumbnail?: string;
+  }>;
 };
 
 const WELCOME_MESSAGE: Message = {
@@ -67,6 +76,36 @@ function getFallbackResponse(userText: string): string {
   return FALLBACK_RESPONSES[Math.floor(Math.random() * FALLBACK_RESPONSES.length)];
 }
 
+function aiFiltersToSpec(filters: ShoppingAiResponse["filters"]) {
+  return {
+    category: filters.category || null,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    brand: filters.brand || null,
+    query: filters.query || null,
+    color: filters.color || null,
+    purpose: filters.purpose || null,
+    keywords: [
+      filters.brand,
+      filters.query,
+      filters.color,
+      filters.purpose,
+    ].filter(Boolean),
+  };
+}
+
+async function fetchProductsForDecision(decision: ShoppingAiResponse) {
+  if (!decision.requiresApiCall || decision.needsMoreInformation) return [];
+
+  if (decision.apiAction === "featured_products") {
+    const result = await getProducts(4);
+    return (result.products || []).slice(0, 4);
+  }
+
+  const result = await searchProductsBySpec(aiFiltersToSpec(decision.filters));
+  return (result.products || []).slice(0, 4);
+}
+
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([WELCOME_MESSAGE]);
@@ -99,42 +138,36 @@ export default function ChatBot() {
         .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
         .join("\n");
 
-      const fullPrompt = `Previous conversation:\n${conversationHistory}\n\nUser: ${text}\n\nRespond as the shopping assistant.`;
+      // Frontend sends ONLY: message and conversation (optional)
+      // System prompt is built on backend - never exposed to frontend
+      const aiResult = await requestAiStructuredOutput(text, {
+        conversation: conversationHistory,
+      });
 
-      const systemPrompt = `You are a helpful AI shopping assistant integrated into a product catalog app. Your role is to help users find products, answer questions about the catalog, and provide recommendations.
-
-Rules:
-1. Be friendly, concise, and helpful.
-2. If a user asks about specific products (e.g., "laptops under $1000"), provide general guidance and mention what they might find.
-3. You can ask clarifying questions if needed.
-4. Keep responses under 150 words.
-5. Do NOT make up specific product names, prices, or details that you're not sure about. Instead, give general category advice.
-6. If asked something outside shopping/products, politely redirect to product-related topics.
-7. Use emojis occasionally to keep it friendly.`;
-
-      // Try NVIDIA API first
-      const aiResult = await requestAiStructuredOutput(fullPrompt, systemPrompt);
-
-      let reply = "";
-
-      if (aiResult.data?.choices?.[0]?.message?.content) {
-        // NVIDIA worked!
-        reply = aiResult.data.choices[0].message.content.trim();
-        
-        // Check if there's a search directive in the reply
-        const searchMatch = reply.match(/\[SEARCH:(.*?)\]/);
-        if (searchMatch) {
-          reply = reply.replace(searchMatch[0], "").trim();
-        }
-      } else {
-        // NVIDIA failed or wasn't available - use smart fallback
-        reply = getFallbackResponse(text);
+      if (aiResult.error || !aiResult.data) {
+        setMessages((prev) => [
+          ...prev,
+          { role: "assistant", text: getFallbackResponse(text) },
+        ]);
+        return;
       }
 
-      setMessages((prev) => [...prev, { role: "assistant", text: reply || "Let me know if you need help finding products!" }]);
+      const products = await fetchProductsForDecision(aiResult.data);
+      const reply =
+        products.length === 0 && aiResult.data.requiresApiCall
+          ? `${aiResult.data.reply}\n\nI couldn't find exact matches in the catalog. Try changing the category, brand, or budget.`
+          : aiResult.data.reply;
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: "assistant",
+          text: reply || "Let me know if you need help finding products!",
+          products,
+        },
+      ]);
     } catch {
-      // Ultimate fallback
-      const reply = getFallbackResponse(input);
+      const reply = getFallbackResponse(text);
       setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
     } finally {
       setIsLoading(false);
@@ -214,6 +247,29 @@ Rules:
                   }`}
                 >
                   {msg.text}
+                  {msg.products && msg.products.length > 0 && (
+                    <div className="mt-3 space-y-2 whitespace-normal">
+                      {msg.products.map((product) => (
+                        <Link
+                          key={product.id}
+                          href={`/dashboard/products/${product.id}`}
+                          className="block rounded-xl border border-gray-100 bg-gray-50 p-2 hover:border-gray-300 transition-colors"
+                        >
+                          <p className="text-xs font-bold text-gray-900 line-clamp-1">
+                            {product.title}
+                          </p>
+                          <div className="mt-1 flex items-center justify-between gap-2">
+                            <span className="text-[11px] text-gray-500 line-clamp-1">
+                              {product.category || "Product"}
+                            </span>
+                            <span className="text-xs font-black text-black">
+                              ${product.price}
+                            </span>
+                          </div>
+                        </Link>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
             ))}

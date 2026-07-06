@@ -1,18 +1,51 @@
+export type ShoppingAiIntent =
+  | "greeting"
+  | "gratitude"
+  | "product_search"
+  | "recommendation"
+  | "app_question"
+  | "out_of_scope";
+
+export type ShoppingAiResponse = {
+  intent: ShoppingAiIntent;
+  requiresApiCall: boolean;
+  apiAction: "" | "search_products" | "recommended_products" | "featured_products";
+  needsMoreInformation: boolean;
+  missingInformation: string[];
+  filters: {
+    category: string;
+    brand: string;
+    query: string;
+    minPrice: number | null;
+    maxPrice: number | null;
+    color: string;
+    purpose: string;
+  };
+  reply: string;
+  confidenceScore: number;
+};
+
 export type AiResponse = {
-  data?: any;
+  data?: ShoppingAiResponse;
   error?: string;
 };
 
 export async function requestAiStructuredOutput(
-  userPrompt: string,
-  systemPrompt = "Follow instructions and return ONLY valid JSON matching the schema.",
-  model?: string
+  message: string,
+  options?: {
+    conversation?: string;
+  }
 ): Promise<AiResponse> {
   try {
+    // Frontend sends ONLY: message and conversation (optional)
+    // System prompt is built on backend - never exposed to frontend
     const res = await fetch(`/api/ai/recommend`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ userPrompt, systemPrompt, model }),
+      body: JSON.stringify({
+        message,
+        conversation: options?.conversation,
+      }),
     });
 
     if (!res.ok) {
