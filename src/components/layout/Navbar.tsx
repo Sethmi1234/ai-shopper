@@ -62,7 +62,7 @@ export default function Navbar() {
           <div className="hidden md:flex items-center gap-6 font-semibold text-sm text-gray-800 flex-1">
             <Link href="#services" className="hover:text-black transition-colors">Services</Link>
             <Link href="#about" className="hover:text-black transition-colors">About Us</Link>
-            <Link href="#blog" className="hover:text-black transition-colors">Blog</Link>
+            <Link href="/dashboard/blog" className="hover:text-black transition-colors">Blog</Link>
           </div>
 
           {/* Center Logo */}
