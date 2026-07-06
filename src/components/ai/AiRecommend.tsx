@@ -2,8 +2,6 @@
 
 import { useState, useEffect } from "react";
 import { Loader2, Sparkles } from "lucide-react";
-import { searchProductsBySpec } from "@/services/product.service";
-import { requestAiStructuredOutput } from "@/services/ai.service";
 import ProductCard from "@/components/product/ProductCard";
 
 type Props = {
@@ -16,32 +14,6 @@ function reviewCount(p: { reviews?: unknown }) {
   if (Array.isArray(p.reviews)) return p.reviews.length;
   if (typeof p.reviews === "number") return p.reviews;
   return 42;
-}
-
-function aiFiltersToSpec(filters: {
-  category: string;
-  brand: string;
-  query: string;
-  minPrice: number | null;
-  maxPrice: number | null;
-  color: string;
-  purpose: string;
-}) {
-  return {
-    category: filters.category || null,
-    minPrice: filters.minPrice,
-    maxPrice: filters.maxPrice,
-    brand: filters.brand || null,
-    query: filters.query || null,
-    color: filters.color || null,
-    purpose: filters.purpose || null,
-    keywords: [
-      filters.brand,
-      filters.query,
-      filters.color,
-      filters.purpose,
-    ].filter(Boolean),
-  };
 }
 
 export default function AiRecommend({ prompt, runKey = 0, compact = false }: Props) {
@@ -60,41 +32,85 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
     setIsLoading(true);
 
     try {
-      // Frontend sends ONLY: message (text)
-      // System prompt is built on backend - never exposed to frontend
-      const aiResult = await requestAiStructuredOutput(text.trim());
-      const decision = aiResult.data;
+      // STEP 1: Classify intent using the new classify API
+      const classifyRes = await fetch("/api/ai/classify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text.trim() }),
+      });
 
-      if (aiResult.error || !decision) {
-        throw new Error(aiResult.error || "AI did not return a structured response.");
+      const classifyData = await classifyRes.json();
+      console.log("CLASSIFICATION:", classifyData);
+
+      // STEP 2: Fetch products by category
+      let products = [];
+      let category = classifyData.category || "general";
+      let maxPrice: number | null = null;
+      let minPrice: number | null = null;
+
+      if (category !== "general") {
+        // Fetch products from the specific category
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL || "https://dummyjson.com"}/products/category/${category}`
+        );
+        const data = await res.json();
+        products = data.products || [];
+
+        // STEP 3: Extract price filters from user message
+        const lowerText = text.toLowerCase();
+
+        // Extract max price (e.g., "under $1000", "max 500", "below 200")
+        const maxPriceMatch = lowerText.match(/(?:under|below|max|less than|cheaper than|budget)\s*[$]?\s*(\d+)/i);
+        if (maxPriceMatch) {
+          maxPrice = parseInt(maxPriceMatch[1], 10);
+        }
+
+        // Extract min price (e.g., "above $500", "min 200", "over 100")
+        const minPriceMatch = lowerText.match(/(?:above|over|min|more than|at least)\s*[$]?\s*(\d+)/i);
+        if (minPriceMatch) {
+          minPrice = parseInt(minPriceMatch[1], 10);
+        }
+
+        // Apply price filters
+        if (maxPrice !== null) {
+          products = products.filter((p: any) => p.price <= maxPrice!);
+        }
+        if (minPrice !== null) {
+          products = products.filter((p: any) => p.price >= minPrice!);
+        }
+
+        // STEP 4: Optional keyword filtering (A+ upgrade)
+        // Extract keywords from user message for filtering
+        const keywords = text
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((word) => word.length > 2 && !["what", "show", "find", "looking", "for", "have", "the", "a", "an", "in", "under", "cheap", "best", "recommend", "max", "min", "above", "below", "over", "less", "more", "than", "budget", "at", "least"].includes(word));
+
+        if (keywords.length > 0) {
+          products = products.filter((p: any) =>
+            keywords.some((keyword) =>
+              p.title?.toLowerCase().includes(keyword) ||
+              p.description?.toLowerCase().includes(keyword) ||
+              p.category?.toLowerCase().includes(keyword)
+            )
+          );
+        }
+
+        // Limit to 6 products for display
+        products = products.slice(0, 6);
       }
 
-      if (!decision.requiresApiCall || decision.needsMoreInformation) {
-        setAiReply(decision.reply);
-        return;
-      }
-
-      const { searchProductsByPrompt } = await import("@/services/product.service");
-      
-      let result;
-      const spec = aiFiltersToSpec(decision.filters);
-      if (
-        spec.category ||
-        spec.keywords.length ||
-        spec.maxPrice != null ||
-        spec.minPrice != null
-      ) {
-        result = await searchProductsBySpec(spec);
+      // STEP 5: Generate AI reply based on classification
+      if (category === "general") {
+        setError("I couldn't determine what category you're looking for. Try being more specific, like 'laptops under $1000' or 'skincare products'.");
+      } else if (products.length === 0) {
+        setError(`I searched in the ${category} category but couldn't find matching products. Try adjusting your price range or browse our full catalog.`);
       } else {
-        result = await searchProductsByPrompt(text.trim());
-      }
-
-      const nextProducts = result.products || [];
-      if (nextProducts.length === 0) {
-        setError("No products matched your request. Try a different description.");
-      } else {
-        setAiReply(decision.reply);
-        setProducts(nextProducts);
+        const priceInfo = maxPrice || minPrice
+          ? ` within your ${maxPrice ? `max $${maxPrice}` : `min $${minPrice}`} budget`
+          : "";
+        setAiReply(`Found ${products.length} product${products.length !== 1 ? "s" : ""} in ${category}${priceInfo} for you!`);
+        setProducts(products);
       }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
