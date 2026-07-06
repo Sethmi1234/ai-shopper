@@ -10,8 +10,6 @@ import {
   User,
 } from "lucide-react";
 import Link from "next/link";
-import { requestAiStructuredOutput, ShoppingAiResponse } from "@/services/ai.service";
-import { getProducts, searchProductsBySpec } from "@/services/product.service";
 
 type Message = {
   role: "user" | "assistant";
@@ -40,7 +38,7 @@ const FALLBACK_RESPONSES = [
 
 function getFallbackResponse(userText: string): string {
   const lower = userText.toLowerCase();
-  
+
   if (lower.includes("laptop") || lower.includes("computer")) {
     return "💻 We have a great selection of laptops! Go to the **Products** page and select the 'Electronics' category filter to find laptops. You can also sort by price Low→High to find budget-friendly options.";
   }
@@ -71,39 +69,9 @@ function getFallbackResponse(userText: string): string {
   if (lower.includes("thank")) {
     return "You're welcome! 😊 Happy shopping! If you need anything else, just ask.";
   }
-  
+
   // Default random fallback
   return FALLBACK_RESPONSES[Math.floor(Math.random() * FALLBACK_RESPONSES.length)];
-}
-
-function aiFiltersToSpec(filters: ShoppingAiResponse["filters"]) {
-  return {
-    category: filters.category || null,
-    minPrice: filters.minPrice,
-    maxPrice: filters.maxPrice,
-    brand: filters.brand || null,
-    query: filters.query || null,
-    color: filters.color || null,
-    purpose: filters.purpose || null,
-    keywords: [
-      filters.brand,
-      filters.query,
-      filters.color,
-      filters.purpose,
-    ].filter(Boolean),
-  };
-}
-
-async function fetchProductsForDecision(decision: ShoppingAiResponse) {
-  if (!decision.requiresApiCall || decision.needsMoreInformation) return [];
-
-  if (decision.apiAction === "featured_products") {
-    const result = await getProducts(4);
-    return (result.products || []).slice(0, 4);
-  }
-
-  const result = await searchProductsBySpec(aiFiltersToSpec(decision.filters));
-  return (result.products || []).slice(0, 4);
 }
 
 export default function ChatBot() {
@@ -133,40 +101,98 @@ export default function ChatBot() {
     setIsLoading(true);
 
     try {
-      const conversationHistory = messages
-        .filter((m) => m.text !== WELCOME_MESSAGE.text)
-        .map((m) => `${m.role === "user" ? "User" : "Assistant"}: ${m.text}`)
-        .join("\n");
-
-      // Frontend sends ONLY: message and conversation (optional)
-      // System prompt is built on backend - never exposed to frontend
-      const aiResult = await requestAiStructuredOutput(text, {
-        conversation: conversationHistory,
+      // STEP 1: Classify intent using the new classify API
+      const classifyRes = await fetch("/api/ai/classify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ message: text }),
       });
 
-      if (aiResult.error || !aiResult.data) {
-        setMessages((prev) => [
-          ...prev,
-          { role: "assistant", text: getFallbackResponse(text) },
-        ]);
-        return;
+      const classifyData = await classifyRes.json();
+      console.log("CLASSIFICATION:", classifyData);
+
+      // STEP 2: Fetch products by category
+      let products = [];
+      let category = classifyData.category || "general";
+      let maxPrice: number | null = null;
+      let minPrice: number | null = null;
+
+      if (category !== "general") {
+        // Fetch products from the specific category
+        const res = await fetch(
+          `${process.env.NEXT_PUBLIC_BASE_URL || "https://dummyjson.com"}/products/category/${category}`
+        );
+        const data = await res.json();
+        products = data.products || [];
+
+        // STEP 3: Extract price filters from user message
+        const lowerText = text.toLowerCase();
+
+        // Extract max price (e.g., "under $1000", "max 500", "below 200")
+        const maxPriceMatch = lowerText.match(/(?:under|below|max|less than|cheaper than|budget)\s*[$]?\s*(\d+)/i);
+        if (maxPriceMatch) {
+          maxPrice = parseInt(maxPriceMatch[1], 10);
+        }
+
+        // Extract min price (e.g., "above $500", "min 200", "over 100")
+        const minPriceMatch = lowerText.match(/(?:above|over|min|more than|at least)\s*[$]?\s*(\d+)/i);
+        if (minPriceMatch) {
+          minPrice = parseInt(minPriceMatch[1], 10);
+        }
+
+        // Apply price filters
+        if (maxPrice !== null) {
+          products = products.filter((p: any) => p.price <= maxPrice!);
+        }
+        if (minPrice !== null) {
+          products = products.filter((p: any) => p.price >= minPrice!);
+        }
+
+        // STEP 4: Optional keyword filtering (A+ upgrade)
+        // Extract keywords from user message for filtering
+        const keywords = text
+          .toLowerCase()
+          .split(/\s+/)
+          .filter((word) => word.length > 2 && !["what", "show", "find", "looking", "for", "have", "the", "a", "an", "in", "under", "cheap", "best", "max", "min", "above", "below", "over", "less", "more", "than", "budget", "at", "least"].includes(word));
+
+        if (keywords.length > 0) {
+          products = products.filter((p: any) =>
+            keywords.some((keyword) =>
+              p.title?.toLowerCase().includes(keyword) ||
+              p.description?.toLowerCase().includes(keyword) ||
+              p.category?.toLowerCase().includes(keyword)
+            )
+          );
+        }
+
+        // Limit to 4 products for display
+        products = products.slice(0, 4);
       }
 
-      const products = await fetchProductsForDecision(aiResult.data);
-      const reply =
-        products.length === 0 && aiResult.data.requiresApiCall
-          ? `${aiResult.data.reply}\n\nI couldn't find exact matches in the catalog. Try changing the category, brand, or budget.`
-          : aiResult.data.reply;
+      // STEP 5: Generate AI reply based on classification
+      let reply = "";
+
+      if (category === "general") {
+        reply = getFallbackResponse(text);
+      } else if (products.length === 0) {
+        reply = `I searched in the ${category} category but couldn't find matching products. Try adjusting your price range or browse our full catalog.`;
+      } else {
+        const priceInfo = maxPrice || minPrice
+          ? ` within your ${maxPrice ? `max $${maxPrice}` : `min $${minPrice}`} budget`
+          : "";
+        reply = `I found ${products.length} product${products.length !== 1 ? "s" : ""} in ${category}${priceInfo} for you!`;
+      }
 
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          text: reply || "Let me know if you need help finding products!",
+          text: reply,
           products,
         },
       ]);
-    } catch {
+    } catch (error) {
+      console.error("Chatbot error:", error);
       const reply = getFallbackResponse(text);
       setMessages((prev) => [...prev, { role: "assistant", text: reply }]);
     } finally {
