@@ -45,7 +45,7 @@ function FilterSelect<T extends string>({
       <select
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
-        className="min-w-[160px] rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-100 outline-none"
+        className="min-w-[160px] rounded-full border border-gray-200 bg-white px-4 py-2 text-sm text-gray-700 shadow-sm focus:border-gray-400 focus:ring-2 focus:ring-gray-100 outline-none"
       >
         {options.map((opt) => (
           <option key={opt.value} value={opt.value}>
@@ -133,12 +133,12 @@ export default function CategoryPage() {
     priceFilter !== "all" || ratingFilter !== "all" || sort !== "default";
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc]">
+    <div className="min-h-screen bg-white">
       {/* Hero Banner */}
-      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+      <div className="bg-black text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
           {/* Breadcrumb */}
-          <nav className="flex items-center gap-2 text-blue-200 text-sm mb-5">
+          <nav className="flex items-center gap-2 text-gray-400 text-sm mb-5">
             <Link href="/dashboard" className="hover:text-white transition-colors">
               Home
             </Link>
@@ -154,7 +154,7 @@ export default function CategoryPage() {
             <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight mb-2">
               {categoryName}
             </h1>
-            <p className="text-blue-200 text-sm sm:text-base max-w-xl">
+            <p className="text-gray-400 text-sm sm:text-base max-w-xl">
               {isLoading
                 ? "Loading products…"
                 : `${data?.total ?? 0} products found`}
@@ -224,7 +224,7 @@ export default function CategoryPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-32 gap-4">
-            <Loader2 className="animate-spin text-blue-600" size={40} />
+            <Loader2 className="animate-spin text-black" size={40} />
             <p className="text-gray-400 text-sm">Loading products…</p>
           </div>
         ) : error ? (
@@ -234,7 +234,7 @@ export default function CategoryPage() {
             </p>
             <Link
               href="/dashboard"
-              className="mt-4 inline-block text-blue-600 underline text-sm"
+              className="mt-4 inline-block text-black underline text-sm"
             >
               Go back home
             </Link>
@@ -246,7 +246,7 @@ export default function CategoryPage() {
             </p>
             <button
               onClick={clearFilters}
-              className="mt-4 text-blue-600 underline text-sm"
+              className="mt-4 text-black underline text-sm"
             >
               Clear filters
             </button>
@@ -261,7 +261,7 @@ export default function CategoryPage() {
                 }}
               >
                 <Link href={`/dashboard/products/${product.id}`} className="block group">
-                  <div className="bg-white rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-blue-100 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
+                  <div className="bg-white rounded-3xl shadow-sm border border-gray-100 hover:shadow-xl hover:border-gray-200 hover:-translate-y-1 transition-all duration-300 overflow-hidden">
                     {/* Image */}
                     <div className="relative h-56 bg-gray-50">
                       <Image
@@ -277,8 +277,8 @@ export default function CategoryPage() {
                       {/* Badges */}
                       <div className="absolute top-3 left-3 right-3 flex justify-between items-start">
                         {i === 0 ? (
-                          <span className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-semibold text-blue-700 flex items-center gap-1 shadow-sm">
-                            <Sparkles size={11} className="text-blue-500" />
+                          <span className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1 shadow-sm">
+                            <Sparkles size={11} className="text-gray-500" />
                             Best Seller
                           </span>
                         ) : product.discountPercentage > 15 ? (
@@ -286,8 +286,8 @@ export default function CategoryPage() {
                             -{Math.round(product.discountPercentage)}%
                           </span>
                         ) : i === 2 ? (
-                          <span className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-semibold text-blue-700 flex items-center gap-1 shadow-sm">
-                            <TrendingUp size={11} className="text-blue-500" />
+                          <span className="bg-white/90 backdrop-blur-sm px-2.5 py-1 rounded-full text-xs font-semibold text-gray-700 flex items-center gap-1 shadow-sm">
+                            <TrendingUp size={11} className="text-gray-500" />
                             Trending
                           </span>
                         ) : (
@@ -321,7 +321,7 @@ export default function CategoryPage() {
 
                     {/* Info */}
                     <div className="p-4">
-                      <p className="text-xs font-medium text-blue-500 uppercase tracking-wide mb-1">
+                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide mb-1">
                         {formatCategoryName(product.category || slug)}
                       </p>
                       <h3 className="font-bold text-gray-900 text-sm leading-snug mb-2 line-clamp-2">
@@ -368,7 +368,7 @@ export default function CategoryPage() {
                         </div>
                         <button
                           onClick={(e) => e.preventDefault()}
-                          className="w-9 h-9 rounded-full bg-blue-600 flex items-center justify-center text-white hover:bg-blue-700 hover:shadow-md transition-all"
+                          className="w-9 h-9 rounded-full bg-black flex items-center justify-center text-white hover:bg-gray-800 hover:shadow-md transition-all"
                         >
                           <ShoppingCart size={16} />
                         </button>

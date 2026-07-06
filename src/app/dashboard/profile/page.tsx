@@ -12,9 +12,9 @@ export default function ProfilePage() {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-[#f8f9fc] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="flex flex-col items-center gap-4">
-          <Loader2 className="animate-spin text-blue-600" size={44} />
+          <Loader2 className="animate-spin text-black" size={44} />
           <p className="text-gray-400 text-sm">Loading profile…</p>
         </div>
       </div>
@@ -23,12 +23,12 @@ export default function ProfilePage() {
 
   if (error || !user) {
     return (
-      <div className="min-h-screen bg-[#f8f9fc] flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-500 font-medium text-lg">Failed to load profile.</p>
           <Link
             href="/dashboard"
-            className="mt-4 inline-block text-blue-600 underline text-sm"
+            className="mt-4 inline-block text-black underline text-sm"
           >
             Go back home
           </Link>
@@ -40,11 +40,11 @@ export default function ProfilePage() {
   const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username;
 
   return (
-    <div className="min-h-screen bg-[#f8f9fc]">
+    <div className="min-h-screen bg-white">
       {/* Header */}
-      <div className="bg-gradient-to-br from-blue-600 via-blue-700 to-indigo-800 text-white">
+      <div className="bg-black text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-14">
-          <nav className="flex items-center gap-2 text-blue-200 text-sm mb-6">
+          <nav className="flex items-center gap-2 text-gray-400 text-sm mb-6">
             <Link href="/dashboard" className="hover:text-white transition-colors">
               Home
             </Link>
@@ -73,8 +73,8 @@ export default function ProfilePage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
                 {fullName}
               </h1>
-              <p className="text-blue-200 text-sm mt-1">@{user.username}</p>
-              <p className="text-blue-200/70 text-xs mt-1 capitalize">{user.role || "Member"}</p>
+              <p className="text-gray-400 text-sm mt-1">@{user.username}</p>
+              <p className="text-gray-500 text-xs mt-1 capitalize">{user.role || "Member"}</p>
             </div>
           </div>
         </div>
@@ -88,7 +88,7 @@ export default function ProfilePage() {
             {/* Personal Details Card */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-                <User size={18} className="text-blue-600" />
+                <User size={18} className="text-black" />
                 Personal Details
               </h2>
 
@@ -115,14 +115,14 @@ export default function ProfilePage() {
             {/* Contact Card */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-                <Mail size={18} className="text-blue-600" />
+                <Mail size={18} className="text-black" />
                 Contact Information
               </h2>
 
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                    <Mail size={16} className="text-blue-600" />
+                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                    <Mail size={16} className="text-black" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Email</p>
@@ -131,8 +131,8 @@ export default function ProfilePage() {
                 </div>
                 {user.phone && (
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                      <Phone size={16} className="text-blue-600" />
+                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                      <Phone size={16} className="text-black" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Phone</p>
@@ -147,15 +147,15 @@ export default function ProfilePage() {
             {(user.address || user.company?.address) && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-                  <MapPin size={18} className="text-blue-600" />
+                  <MapPin size={18} className="text-black" />
                   Address
                 </h2>
 
                 <div className="space-y-4">
                   {user.address && (
                     <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0 mt-0.5">
-                        <MapPin size={16} className="text-blue-600" />
+                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <MapPin size={16} className="text-black" />
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Address</p>
@@ -174,8 +174,8 @@ export default function ProfilePage() {
                   )}
                   {user.company?.address && (
                     <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-full bg-purple-50 flex items-center justify-center shrink-0 mt-0.5">
-                        <MapPin size={16} className="text-purple-600" />
+                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
+                        <MapPin size={16} className="text-black" />
                       </div>
                       <div>
                         <p className="text-xs text-gray-500">Company Address</p>
@@ -202,14 +202,14 @@ export default function ProfilePage() {
             {/* Account Info Card */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
               <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-                <Shield size={18} className="text-blue-600" />
+                <Shield size={18} className="text-black" />
                 Account Info
               </h2>
 
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-blue-50 flex items-center justify-center shrink-0">
-                    <Tag size={16} className="text-blue-600" />
+                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                    <Tag size={16} className="text-black" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">User ID</p>
@@ -218,8 +218,8 @@ export default function ProfilePage() {
                 </div>
                 {user.role && (
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-green-50 flex items-center justify-center shrink-0">
-                      <Shield size={16} className="text-green-600" />
+                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                      <Shield size={16} className="text-black" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Role</p>
@@ -229,8 +229,8 @@ export default function ProfilePage() {
                 )}
                 {user.birthDate && (
                   <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-orange-50 flex items-center justify-center shrink-0">
-                      <Calendar size={16} className="text-orange-600" />
+                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                      <Calendar size={16} className="text-black" />
                     </div>
                     <div>
                       <p className="text-xs text-gray-500">Birth Date</p>
@@ -245,7 +245,7 @@ export default function ProfilePage() {
             {user.company && (
               <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
                 <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-                  <Globe size={18} className="text-blue-600" />
+                  <Globe size={18} className="text-black" />
                   Company
                 </h2>
 
