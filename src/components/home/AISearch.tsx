@@ -12,11 +12,38 @@ import { ShoppingBag, Heart, Star } from "lucide-react";
 
 const SUGGESTIONS = ["Skincare for dry skin", "Gifts for tech lovers", "Minimalist desk setup"];
 
+function aiFiltersToSpec(filters: {
+  category: string;
+  brand: string;
+  query: string;
+  minPrice: number | null;
+  maxPrice: number | null;
+  color: string;
+  purpose: string;
+}) {
+  return {
+    category: filters.category || null,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    brand: filters.brand || null,
+    query: filters.query || null,
+    color: filters.color || null,
+    purpose: filters.purpose || null,
+    keywords: [
+      filters.brand,
+      filters.query,
+      filters.color,
+      filters.purpose,
+    ].filter(Boolean),
+  };
+}
+
 export default function AISearch() {
   const [query, setQuery] = useState("");
   const [products, setProducts] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiReply, setAiReply] = useState<string | null>(null);
   const [hasSearched, setHasSearched] = useState(false);
 
   const addItem = useCart((state) => state.addItem);
@@ -25,37 +52,32 @@ export default function AISearch() {
   const run = async (text: string) => {
     if (!text.trim()) return;
     setError(null);
+    setAiReply(null);
     setProducts([]);
     setIsLoading(true);
     setHasSearched(true);
 
     try {
-      const systemPrompt = `You are a product search assistant. Given a user's natural language request, extract the following as valid JSON (no markdown, no backticks, just raw JSON):
-{
-  "category": "best matching category slug or null",
-  "keywords": ["array", "of", "relevant", "search", "keywords"],
-  "maxPrice": null or number
-}
-Available categories: beauty, fragrances, furniture, womens-bags, laptops, smartphones, mobile-accessories, home-decoration, kitchen-accessories, mens-shirts, mens-shoes, womens-dresses, womens-watches, womens-jewellery, sunglasses, tablets, groceries, sports-accessories, motorcycle, vehicle, skin-care, tops.`;
+      const aiResult = await requestAiStructuredOutput(text.trim());
+      const decision = aiResult.data;
 
-      let spec: { category?: string | null; keywords?: string[] | null; maxPrice?: number | null } | null = null;
+      if (aiResult.error || !decision) {
+        throw new Error(aiResult.error || "AI did not return a structured response.");
+      }
 
-      const aiResult = await requestAiStructuredOutput(text.trim(), systemPrompt);
-      if (aiResult.data?.choices?.[0]?.message?.content) {
-        try {
-          const content = aiResult.data.choices[0].message.content.trim();
-          const cleaned = content.replace(/```json\s*/gi, "").replace(/```\s*$/g, "").trim();
-          const parsed = JSON.parse(cleaned);
-          spec = {
-            category: parsed.category || null,
-            keywords: Array.isArray(parsed.keywords) ? parsed.keywords : null,
-            maxPrice: typeof parsed.maxPrice === "number" ? parsed.maxPrice : null,
-          };
-        } catch { /* ignore */ }
+      if (!decision.requiresApiCall || decision.needsMoreInformation) {
+        setAiReply(decision.reply);
+        return;
       }
 
       let result;
-      if (spec && (spec.category || spec.keywords?.length || spec.maxPrice != null)) {
+      const spec = aiFiltersToSpec(decision.filters);
+      if (
+        spec.category ||
+        spec.keywords.length ||
+        spec.maxPrice != null ||
+        spec.minPrice != null
+      ) {
         result = await searchProductsBySpec(spec);
       } else {
         const { searchProductsByPrompt } = await import("@/services/product.service");
@@ -66,6 +88,7 @@ Available categories: beauty, fragrances, furniture, womens-bags, laptops, smart
       if (found.length === 0) {
         setError("No products matched your request. Try a different description.");
       } else {
+        setAiReply(decision.reply);
         setProducts(found);
       }
     } catch (e: unknown) {
@@ -137,7 +160,7 @@ Available categories: beauty, fragrances, furniture, womens-bags, laptops, smart
         <div className="bg-white border border-gray-100 shadow-lg mt-2 p-8 text-center">
           <p className="text-red-500 font-bold">{error}</p>
           <button
-            onClick={() => { setError(null); setHasSearched(false); }}
+            onClick={() => { setError(null); setAiReply(null); setHasSearched(false); }}
             className="mt-4 text-xs font-black uppercase tracking-widest text-black underline"
           >
             Try again
@@ -145,8 +168,17 @@ Available categories: beauty, fragrances, furniture, womens-bags, laptops, smart
         </div>
       )}
 
+      {!isLoading && !error && aiReply && products.length === 0 && (
+        <div className="bg-white border border-gray-100 shadow-lg mt-2 p-8 text-center">
+          <p className="text-gray-700 font-bold">{aiReply}</p>
+        </div>
+      )}
+
       {!isLoading && products.length > 0 && (
         <div className="bg-white border border-gray-100 shadow-lg mt-2 p-6 md:p-8">
+          {aiReply && (
+            <p className="text-sm font-semibold text-gray-600 mb-4">{aiReply}</p>
+          )}
           <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-4">
             <Sparkles size={18} className="text-black" />
             <h3 className="text-lg font-black text-black uppercase tracking-tighter">

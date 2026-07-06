@@ -1,84 +1,35 @@
 import { NextRequest, NextResponse } from "next/server";
-import OpenAI from "openai";
-
-const DEFAULT_MODEL = "meta/llama-3.3-70b-instruct";
-const DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1";
-
-// Initialize OpenAI client configured for NVIDIA API
-function createNvidiaClient(): OpenAI {
-  const apiKey = process.env.NVIDIA_API_KEY;
-  const baseURL = process.env.NVIDIA_BUILD_URL || DEFAULT_BASE_URL;
-
-  return new OpenAI({
-    apiKey: apiKey || "",
-    baseURL,
-  });
-}
+import { getShoppingAssistantResponse } from "@/services/shoppingAssistant.service";
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { userPrompt, systemPrompt, model } = body;
+    const message = String(body.message || "").trim();
+    const conversation = String(body.conversation || "").trim();
 
-    const apiKey = process.env.NVIDIA_API_KEY;
-    const modelId = model || process.env.NVIDIA_MODEL || DEFAULT_MODEL;
-
-    console.log("API KEY STATUS:", apiKey ? "LOADED" : "MISSING");
-    console.log("MODEL:", modelId);
-
-    if (!apiKey) {
+    // Frontend should ONLY send: message and conversation (optional)
+    // System prompt is built on the backend - never exposed to frontend
+    if (!message) {
       return NextResponse.json(
-        { error: "NVIDIA API key not configured on server." },
-        { status: 500 }
+        { error: "Message is required." },
+        { status: 400 }
       );
     }
 
-    const client = createNvidiaClient();
+    // Backend builds prompt, attaches hidden system prompt, calls NVIDIA NIM
+    // Validates JSON response, returns result to frontend
+    const data = await getShoppingAssistantResponse({
+      message,
+      conversation,
+      useNvidia: true, // Always use NVIDIA AI for structured output
+    });
 
-    const controller = new AbortController();
-
-    // 60-second timeout to prevent 504 issues
-    const timeout = setTimeout(() => {
-      controller.abort();
-    }, 60000);
-
-    try {
-      console.log("Calling NVIDIA API via OpenAI SDK...");
-
-      const response = await client.chat.completions.create(
-        {
-          model: modelId,
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: userPrompt },
-          ],
-          temperature: 0,
-          max_tokens: 512,
-        },
-        {
-          signal: controller.signal,
-        }
-      );
-
-      console.log("NVIDIA Response received successfully");
-
-      return NextResponse.json({ data: response });
-    } catch (err: any) {
-      if (err.name === "AbortError") {
-        return NextResponse.json(
-          { error: "AI request timed out (60s limit reached)" },
-          { status: 504 }
-        );
-      }
-      throw err;
-    } finally {
-      clearTimeout(timeout);
-    }
-  } catch (err: any) {
-    console.log("SERVER ERROR:", err);
+    return NextResponse.json({ data });
+  } catch (error) {
+    console.error("AI route error:", error);
 
     return NextResponse.json(
-      { error: err.message || "Internal Server Error" },
+      { error: "Unable to process AI request." },
       { status: 500 }
     );
   }
