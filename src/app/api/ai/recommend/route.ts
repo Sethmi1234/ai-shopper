@@ -1,18 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
+import OpenAI from "openai";
 
 const DEFAULT_MODEL = "meta/llama-3.3-70b-instruct";
 const DEFAULT_BASE_URL = "https://integrate.api.nvidia.com/v1";
+
+// Initialize OpenAI client configured for NVIDIA API
+function createNvidiaClient(): OpenAI {
+  const apiKey = process.env.NVIDIA_API_KEY;
+  const baseURL = process.env.NVIDIA_BUILD_URL || DEFAULT_BASE_URL;
+
+  return new OpenAI({
+    apiKey: apiKey || "",
+    baseURL,
+  });
+}
 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
     const { userPrompt, systemPrompt, model } = body;
 
-    // ❗ IMPORTANT: use ONLY server-side key
     const apiKey = process.env.NVIDIA_API_KEY;
-
     const modelId = model || process.env.NVIDIA_MODEL || DEFAULT_MODEL;
-    const baseUrl = process.env.NVIDIA_BUILD_URL || DEFAULT_BASE_URL;
 
     console.log("API KEY STATUS:", apiKey ? "LOADED" : "MISSING");
     console.log("MODEL:", modelId);
@@ -24,25 +33,20 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    const client = createNvidiaClient();
+
     const controller = new AbortController();
 
-    // ✅ FIX 504 ISSUE → increase timeout
+    // 60-second timeout to prevent 504 issues
     const timeout = setTimeout(() => {
       controller.abort();
-    }, 60000); // ⬅ 60 seconds (VERY IMPORTANT)
-
-    let resp: Response;
+    }, 60000);
 
     try {
-      console.log("Calling NVIDIA API...");
+      console.log("Calling NVIDIA API via OpenAI SDK...");
 
-      resp = await fetch(`${baseUrl}/chat/completions`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${apiKey}`,
-        },
-        body: JSON.stringify({
+      const response = await client.chat.completions.create(
+        {
           model: modelId,
           messages: [
             { role: "system", content: systemPrompt },
@@ -50,11 +54,15 @@ export async function POST(req: NextRequest) {
           ],
           temperature: 0,
           max_tokens: 512,
-        }),
-        signal: controller.signal,
-      });
+        },
+        {
+          signal: controller.signal,
+        }
+      );
 
-      console.log("NVIDIA Response Status:", resp.status);
+      console.log("NVIDIA Response received successfully");
+
+      return NextResponse.json({ data: response });
     } catch (err: any) {
       if (err.name === "AbortError") {
         return NextResponse.json(
@@ -66,24 +74,6 @@ export async function POST(req: NextRequest) {
     } finally {
       clearTimeout(timeout);
     }
-
-    if (!resp.ok) {
-      const txt = await resp.text();
-
-      console.log("NVIDIA ERROR:", resp.status, txt);
-
-      return NextResponse.json(
-        {
-          error: `NVIDIA API Error ${resp.status}`,
-          details: txt,
-        },
-        { status: 502 }
-      );
-    }
-
-    const data = await resp.json();
-
-    return NextResponse.json({ data });
   } catch (err: any) {
     console.log("SERVER ERROR:", err);
 
