@@ -117,7 +117,7 @@ export default function Navbar() {
             <Link href="/dashboard" className="hover:text-black">Home</Link>
             <Link href="/dashboard/category" className="hover:text-black">Categories</Link>
             <Link href="/dashboard/products" className="hover:text-black">Product</Link>
-            <Link href="/dashboard#sales" className="text-red-500 hover:text-red-600">Sales</Link>
+            <Link href="/dashboard/sales" className="text-red-500 hover:text-red-600">Sales</Link>
           </div>
 
           {/* Search Input */}
@@ -152,7 +152,7 @@ export default function Navbar() {
               <Link href="/dashboard/cart" onClick={() => setIsMenuOpen(false)}>
                 Cart {cartCount > 0 && <span className="ml-1 bg-black text-[#ccff00] text-xs px-2 py-0.5">{cartCount}</span>}
               </Link>
-              <Link href="/dashboard#sales" onClick={() => setIsMenuOpen(false)} className="text-red-500">Sales</Link>
+              <Link href="/dashboard/sales" onClick={() => setIsMenuOpen(false)} className="text-red-500">Sales</Link>
             </div>
 
             {username && (
