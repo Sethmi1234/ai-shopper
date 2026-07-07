@@ -1,120 +1,109 @@
 import { NextRequest, NextResponse } from "next/server";
 import { callNvidiaAI } from "@/lib/ai/nvidiaClient";
 
-const SYSTEM_PROMPT = `
-You are an ecommerce recommendation engine.
+const MODEL = process.env.NVIDIA_MODEL || "mistralai/mistral-large-3-675b-instruct-2512";
 
-Your task is to analyze a user's shopping request against a list of available products and select ONLY the products that best match the user's request.
-
-# RULES
-
-1. Consider: intent, category match, description relevance, price suitability, and overall fit
-2. Score each product from 0.0 to 1.0 based on how well it satisfies the user's request
-3. Only include products with a score of 0.7 or higher
-4. Provide a brief reason for why each product was selected
-5. Return ONLY valid JSON. No markdown. No explanation.
-
-# OUTPUT FORMAT
-
-{
-  "matches": [
-    {
-      "id": 1,
-      "score": 0.95,
-      "reason": "Matches healthy breakfast criteria - fresh fruit, under $20"
-    },
-    {
-      "id": 5,
-      "score": 0.88,
-      "reason": "Good breakfast option, fits budget"
-    }
-  ]
-}
-
-# CRITICAL
-
-- Return an empty matches array if no products are suitable
-- Be strict about matching - only include products that genuinely satisfy the request
-- Consider price constraints mentioned in the user's request
-- Consider the product description and category for relevance
-- Return valid JSON only
-`;
-
+/**
+ * POST /api/ai/filter-products
+ *
+ * Takes a list of products and the user's intent/query.
+ * AI reads all products and returns ONLY the IDs that genuinely match.
+ * This is the "Stage 2" AI call that makes the chatbot intelligent.
+ */
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const prompt = String(body.prompt || "").trim();
-    const products = body.products || [];
+    const { products, userIntent, userMessage, filters } = body;
 
-    if (!prompt) {
-      return NextResponse.json(
-        { error: "Prompt is required." },
-        { status: 400 }
-      );
+    if (!products || !Array.isArray(products) || products.length === 0) {
+      return NextResponse.json({ filteredIds: [] });
     }
 
-    if (!Array.isArray(products) || products.length === 0) {
-      return NextResponse.json({ matches: [] });
-    }
+    // Build a compact product list for the AI to reason about
+    const productSummaries = products
+      .slice(0, 30) // limit to 30 products to keep token count reasonable
+      .map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        category: p.category,
+        price: p.price,
+        description: p.description
+          ? p.description.substring(0, 120)
+          : "",
+        brand: p.brand || "",
+        tags: p.tags || [],
+      }));
 
-    // Build the prompt with user request and available products
-    const aiPrompt = `${SYSTEM_PROMPT}
+    const filtersStr = JSON.stringify(filters || {});
 
-User Request:
-${prompt}
+    const prompt = `
+You are a product relevance filter for an ecommerce AI shopping assistant.
 
-Available Products:
-${JSON.stringify(
-  products.map((p: any) => ({
-    id: p.id,
-    title: p.title,
-    price: p.price,
-    description: p.description,
-    category: p.category,
-  })),
-  null,
-  2
-)}
+A customer said: "${userMessage}"
+Their intent: "${userIntent}"
+Filters extracted: ${filtersStr}
 
-Now analyze and return ONLY the matching products as JSON.`;
+Below is a list of products fetched from the store database.
+Your job: Read each product carefully and select ONLY the ones that genuinely match what the customer is asking for.
 
-    // Call NVIDIA AI for intelligent product filtering
-    const response = await callNvidiaAI({
-      model: process.env.NVIDIA_MODEL || "mistralai/mistral-large-3-675b-instruct-2512",
-      prompt: aiPrompt,
-      temperature: 0.2, // Low temperature for consistent filtering
-      maxTokens: 2048,
+Be intelligent:
+- If they asked for "instant food" or "ready-to-eat", only include snacks, instant noodles, canned food — NOT raw ingredients
+- If they asked for "gaming laptop", only include laptops with gaming-related descriptions
+- If they asked for "budget phone under $300", only include phones within that price
+- If they asked for "casual shoes", exclude formal/dress shoes
+- If they asked for "gifts for tech lovers", pick electronics, gadgets, accessories — not furniture
+- Be intelligent but FORGIVING. The store's catalog is limited.
+- If they ask for "instant food" but we only have Ice Cream, Juice, and Apple, select those as the closest ready-to-eat options.
+- If they ask for "ingredients" but we only have Rice, Eggs, and Cooking Oil, pick those.
+- ALWAYS try to find at least 1-3 products that somewhat fit the request. Only return an empty array if absolutely nothing is even remotely relevant.
+
+Products to evaluate:
+${JSON.stringify(productSummaries, null, 2)}
+
+Return ONLY valid JSON. No markdown. No explanation.
+
+{
+  "filteredIds": [1, 2, 3],
+  "reasoning": "brief explanation of why you selected these"
+}
+
+Rules:
+- filteredIds must be an array of product IDs (numbers) from the list above
+- Return maximum 6 products
+- Return minimum 0 products (empty array if nothing fits)
+- NEVER invent IDs not in the list
+`;
+
+    const aiResult = await callNvidiaAI({
+      model: MODEL,
+      prompt,
+      temperature: 0.2,
+      maxTokens: 512,
     });
 
-    if (!response || response.error) {
-      console.error("AI filter error:", response);
-      // Fallback: return all products if AI fails
+    if (!aiResult || aiResult.error || !Array.isArray(aiResult.filteredIds)) {
+      // If AI filter fails, fall back to returning first 4 products
+      console.warn("AI filter failed, using fallback:", aiResult?.error);
       return NextResponse.json({
-        matches: products.map((p: any) => ({
-          id: p.id,
-          score: 0.5,
-          reason: "Fallback - AI filter unavailable",
-        })),
+        filteredIds: products.slice(0, 4).map((p: any) => p.id),
+        fallback: true,
       });
     }
 
-    // Validate the response structure
-    const matches = Array.isArray(response.matches) ? response.matches : [];
+    // Validate: only return IDs that actually exist in the product list
+    const validIds = new Set(products.map((p: any) => p.id));
+    const safeIds = aiResult.filteredIds
+      .filter((id: any) => typeof id === "number" && validIds.has(id))
+      .slice(0, 6);
 
-    // Ensure each match has the required fields
-    const validatedMatches = matches
-      .filter((m: any) => typeof m.id === "number" || typeof m.id === "string")
-      .map((m: any) => ({
-        id: m.id,
-        score: typeof m.score === "number" ? Math.max(0, Math.min(1, m.score)) : 0.5,
-        reason: typeof m.reason === "string" ? m.reason : "",
-      }));
-
-    return NextResponse.json({ matches: validatedMatches });
+    return NextResponse.json({
+      filteredIds: safeIds,
+      reasoning: aiResult.reasoning || "",
+    });
   } catch (error) {
     console.error("Filter products route error:", error);
     return NextResponse.json(
-      { error: "Unable to filter products." },
+      { error: "Unable to filter products.", filteredIds: [] },
       { status: 500 }
     );
   }

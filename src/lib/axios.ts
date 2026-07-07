@@ -26,9 +26,11 @@ const processQueue = (error: unknown, token: string | null = null) => {
 // Request interceptor - attach access token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    if (typeof window !== "undefined") {
+      const token = localStorage.getItem("accessToken");
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
     return config;
   },
@@ -45,9 +47,11 @@ api.interceptors.response.use(
     if (error.response?.status === 401 && !originalRequest._retry) {
       // Don't try to refresh if the failing request was itself the refresh call
       if (originalRequest.url === "/auth/refresh") {
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+        }
         return Promise.reject(error);
       }
 
@@ -66,13 +70,15 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const storedRefreshToken = localStorage.getItem("refreshToken");
+      const storedRefreshToken = typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null;
 
       if (!storedRefreshToken) {
         isRefreshing = false;
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+        }
         return Promise.reject(error);
       }
 
@@ -84,8 +90,10 @@ api.interceptors.response.use(
         const newAccessToken = response.accessToken;
         const newRefreshToken = response.refreshToken;
 
-        localStorage.setItem("accessToken", newAccessToken);
-        localStorage.setItem("refreshToken", newRefreshToken);
+        if (typeof window !== "undefined") {
+          localStorage.setItem("accessToken", newAccessToken);
+          localStorage.setItem("refreshToken", newRefreshToken);
+        }
 
         processQueue(null, newAccessToken);
 
@@ -93,9 +101,11 @@ api.interceptors.response.use(
         return api(originalRequest);
       } catch (refreshError) {
         processQueue(refreshError, null);
-        localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
-        localStorage.removeItem("user");
+        if (typeof window !== "undefined") {
+          localStorage.removeItem("accessToken");
+          localStorage.removeItem("refreshToken");
+          localStorage.removeItem("user");
+        }
         return Promise.reject(refreshError);
       } finally {
         isRefreshing = false;

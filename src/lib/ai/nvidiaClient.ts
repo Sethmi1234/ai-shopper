@@ -29,7 +29,6 @@ export const callNvidiaAI = async (params: {
       ],
       temperature: params.temperature ?? 0.5,
       max_tokens: params.maxTokens ?? 1024,
-      response_format: { type: "json_object" },
     });
 
     const content = completion.choices?.[0]?.message?.content;
@@ -38,6 +37,17 @@ export const callNvidiaAI = async (params: {
       throw new Error("Empty AI response");
     }
 
+    // Try to extract JSON from the response (handles markdown code blocks or plain JSON)
+    const jsonMatch = content.replace(/```(?:json)?\s*/gi, "").replace(/```/g, "").trim();
+    const firstBrace = jsonMatch.indexOf("{");
+    const lastBrace = jsonMatch.lastIndexOf("}");
+    
+    if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+      const jsonStr = jsonMatch.substring(firstBrace, lastBrace + 1);
+      return JSON.parse(jsonStr);
+    }
+    
+    // Fallback: try parsing the entire response as JSON
     return JSON.parse(content);
   } catch (error) {
     console.error("NVIDIA AI Error:", error);
