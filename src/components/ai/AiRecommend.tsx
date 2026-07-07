@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { Loader2, Sparkles, Heart } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
+import { Loader2, Sparkles, Heart, MessageCircle, Send } from "lucide-react";
 import ProductCard from "@/components/product/ProductCard";
 import { useWishlist } from "@/store/useWishlist";
 
@@ -9,6 +9,13 @@ type Props = {
   prompt: string;
   runKey?: number;
   compact?: boolean;
+};
+
+type ClarificationState = {
+  question: string;
+  options: string[];
+  originalPrompt: string;
+  conversation: string;
 };
 
 function reviewCount(p: { reviews?: unknown }) {
@@ -23,74 +30,56 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
   const [error, setError] = useState<string | null>(null);
   const [aiReply, setAiReply] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [clarification, setClarification] = useState<ClarificationState | null>(null);
+  const [conversationHistory, setConversationHistory] = useState<string>("");
   const { toggleItem, isWishlisted } = useWishlist();
 
-  const run = async (text: string) => {
+  const run = useCallback(async (text: string, conversationCtx?: string) => {
     if (!text.trim()) return;
 
     setError(null);
     setAiReply(null);
     setProducts([]);
+    setClarification(null);
     setIsLoading(true);
 
     try {
-      // STEP 1: Classify intent using the AI classify API
-      const classifyRes = await fetch("/api/ai/classify", {
+      // Frontend just sends the prompt — backend fetches products, runs AI, returns results
+      const res = await fetch("/api/ai/smart-recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text.trim() }),
+        body: JSON.stringify({
+          prompt: text.trim(),
+          conversation: conversationCtx || conversationHistory,
+        }),
       });
 
-      const classifyData = await classifyRes.json();
-      console.log("CLASSIFICATION:", classifyData);
+      const data = await res.json();
+      console.log("SMART AI RESPONSE:", data);
 
-      // STEP 2: Fetch products by category
-      let fetchedProducts: any[] = [];
-      let category = classifyData.category || "general";
-
-      if (category !== "general") {
-        const res = await fetch(
-          `${process.env.NEXT_PUBLIC_BASE_URL || "https://dummyjson.com"}/products/category/${category}`
-        );
-        const data = await res.json();
-        fetchedProducts = data.products || [];
-
-        // STEP 3: Send ALL candidate products + user prompt to AI for intelligent filtering
-        // This replaces the old regex price extraction and keyword filtering
-        const filterRes = await fetch("/api/ai/filter-products", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            prompt: text.trim(),
-            products: fetchedProducts,
-          }),
+      // Handle AI asking for clarification
+      if (data.needsClarification) {
+        setClarification({
+          question: data.clarificationQuestion || "Could you tell me more?",
+          options: data.clarificationOptions || [],
+          originalPrompt: text.trim(),
+          conversation: conversationCtx || conversationHistory,
         });
-
-        const filterData = await filterRes.json();
-        console.log("AI FILTER RESULT:", filterData);
-
-        // STEP 4: Filter products based on AI scores (only keep score >= 0.7)
-        if (filterData.matches && Array.isArray(filterData.matches)) {
-          const selectedIds = new Set(
-            filterData.matches
-              .filter((m: any) => m.score >= 0.7)
-              .map((m: any) => m.id)
-          );
-
-          fetchedProducts = fetchedProducts.filter((p: any) =>
-            selectedIds.has(p.id)
-          );
-        }
+        setAiReply(data.reply || null);
+        return;
       }
 
-      // STEP 5: Generate AI reply based on results
-      if (category === "general") {
-        setError("I couldn't determine what category you're looking for. Try being more specific, like 'laptops under $1000' or 'skincare products'.");
-      } else if (fetchedProducts.length === 0) {
-        setError(`I searched in the ${category} category but couldn't find matching products. Try adjusting your description or browse our full catalog.`);
+      // Handle AI returning products (full product data, already filtered)
+      if (data.products && Array.isArray(data.products)) {
+        setProducts(data.products);
+        setAiReply(data.reply || `Found ${data.products.length} matching products!`);
+
+        // Update conversation history
+        setConversationHistory((prev) =>
+          `${prev}\nUser: ${text.trim()}\nAI: ${data.reply || ""}\nFound ${data.products.length} products.`
+        );
       } else {
-        setAiReply(`Found ${fetchedProducts.length} product${fetchedProducts.length !== 1 ? "s" : ""} in ${category} that match your request!`);
-        setProducts(fetchedProducts);
+        setError("I couldn't find any products matching your request. Try describing what you need differently.");
       }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
@@ -98,6 +87,16 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
     } finally {
       setIsLoading(false);
     }
+  }, [conversationHistory]);
+
+  // Handle clarification answer
+  const handleClarificationAnswer = async (answer: string) => {
+    if (!clarification) return;
+
+    const refinedPrompt = `${clarification.originalPrompt} — ${answer}`;
+    const conversationCtx = `${clarification.conversation}\nAI asked: ${clarification.question}\nUser answered: ${answer}`;
+
+    await run(refinedPrompt, conversationCtx);
   };
 
   useEffect(() => {
@@ -112,15 +111,54 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
   }, [runKey]);
 
   if (compact) {
-    if (!isLoading && !error && products.length === 0) return null;
+    if (!isLoading && !error && !aiReply && products.length === 0 && !clarification) return null;
 
     return (
       <div className="w-full mt-6">
         {isLoading && (
           <div className="flex flex-col items-center justify-center py-10 gap-3 text-gray-500">
             <Loader2 className="animate-spin text-blue-600" size={32} />
-            <p className="text-sm font-medium">Finding products for you...</p>
-            <p className="text-xs text-gray-400">AI is analyzing products to find the best matches.</p>
+            <p className="text-sm font-medium">AI is thinking...</p>
+            <p className="text-xs text-gray-400">Fetching products and finding the best matches.</p>
+          </div>
+        )}
+
+        {/* AI Reply */}
+        {aiReply && !isLoading && (
+          <div className="flex items-start gap-2 mb-4 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+            <MessageCircle size={16} className="text-blue-600 mt-0.5 shrink-0" />
+            <p className="text-sm text-gray-700">{aiReply}</p>
+          </div>
+        )}
+
+        {/* Clarification UI */}
+        {clarification && !isLoading && (
+          <div className="mb-4 bg-amber-50 border border-amber-200 rounded-xl px-4 py-4">
+            <p className="text-sm font-medium text-amber-800 mb-3">
+              {clarification.question}
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {clarification.options.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => handleClarificationAnswer(option)}
+                  className="px-4 py-2 text-sm font-medium bg-white border border-amber-300 rounded-full hover:bg-amber-100 hover:border-amber-400 transition-colors text-amber-900"
+                >
+                  {option}
+                </button>
+              ))}
+              <input
+                type="text"
+                placeholder="Type your answer..."
+                className="clarification-input px-4 py-2 text-sm border border-amber-300 rounded-full outline-none focus:border-amber-500 flex-1 min-w-[150px]"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) {
+                    handleClarificationAnswer((e.target as HTMLInputElement).value.trim());
+                    (e.target as HTMLInputElement).value = "";
+                  }
+                }}
+              />
+            </div>
           </div>
         )}
 
@@ -135,7 +173,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
             <div className="flex items-center gap-2 mb-4">
               <Sparkles size={18} className="text-blue-600" />
               <h3 className="text-base font-semibold text-gray-900">
-                Found {products.length} product{products.length !== 1 ? "s" : ""} for you
+                AI Recommendations
               </h3>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -159,7 +197,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
           </div>
         )}
 
-        {!isLoading && !error && products.length === 0 && runKey > 0 && (
+        {!isLoading && !error && !clarification && products.length === 0 && runKey > 0 && !aiReply && (
           <p className="text-sm text-gray-500 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3">
             No products matched your request. Try a different description.
           </p>
@@ -172,7 +210,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
       <h3 className="text-lg font-semibold mb-3">AI Product Recommendation</h3>
       <p className="text-sm text-gray-500 mb-4">
-        Describe what you need and the AI will intelligently find the best matching products.
+        Describe what you need naturally — the AI understands context and will find the best products.
       </p>
 
       <textarea
@@ -180,7 +218,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
         onChange={(e) => setLocalPrompt(e.target.value)}
         rows={3}
         className="w-full p-3 border rounded-lg mb-3"
-        placeholder="e.g. Recommend healthy breakfast food under $20"
+        placeholder="e.g. I need something to eat, show me healthy options under $20"
       />
 
       <div className="flex items-center gap-3">
@@ -189,7 +227,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
           disabled={isLoading || !localPrompt.trim()}
           className="px-4 py-2 rounded-full bg-blue-600 text-white disabled:opacity-50"
         >
-          {isLoading ? "Searching..." : "Ask AI"}
+          {isLoading ? "Thinking..." : "Ask AI"}
         </button>
         <button
           onClick={() => {
@@ -197,6 +235,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
             setProducts([]);
             setError(null);
             setAiReply(null);
+            setClarification(null);
           }}
           className="px-4 py-2 rounded-full border"
         >
@@ -204,15 +243,62 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
         </button>
       </div>
 
+      {/* AI Reply */}
+      {aiReply && !isLoading && (
+        <div className="mt-3 flex items-start gap-2 bg-blue-50 border border-blue-100 rounded-xl px-4 py-3">
+          <MessageCircle size={16} className="text-blue-600 mt-0.5 shrink-0" />
+          <p className="text-sm text-gray-700">{aiReply}</p>
+        </div>
+      )}
+
+      {/* Clarification UI */}
+      {clarification && !isLoading && (
+        <div className="mt-3 bg-amber-50 border border-amber-200 rounded-xl px-4 py-4">
+          <p className="text-sm font-medium text-amber-800 mb-3">
+            {clarification.question}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {clarification.options.map((option) => (
+              <button
+                key={option}
+                onClick={() => handleClarificationAnswer(option)}
+                className="px-4 py-2 text-sm font-medium bg-white border border-amber-300 rounded-full hover:bg-amber-100 hover:border-amber-400 transition-colors text-amber-900"
+              >
+                {option}
+              </button>
+            ))}
+            <div className="flex items-center gap-2 w-full mt-2">
+              <input
+                type="text"
+                placeholder="Type your answer..."
+                className="clarification-input flex-1 px-4 py-2 text-sm border border-amber-300 rounded-full outline-none focus:border-amber-500"
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.target as HTMLInputElement).value.trim()) {
+                    handleClarificationAnswer((e.target as HTMLInputElement).value.trim());
+                    (e.target as HTMLInputElement).value = "";
+                  }
+                }}
+              />
+              <button
+                onClick={() => {
+                  const input = document.querySelector<HTMLInputElement>(".clarification-input");
+                  if (input?.value.trim()) {
+                    handleClarificationAnswer(input.value.trim());
+                    input.value = "";
+                  }
+                }}
+                className="p-2 bg-amber-500 text-white rounded-full hover:bg-amber-600 transition-colors"
+              >
+                <Send size={14} />
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {error && (
         <p className="mt-3 text-red-500">
           {error}
-        </p>
-      )}
-
-      {!error && aiReply && (
-        <p className="mt-3 text-sm text-gray-600">
-          {aiReply}
         </p>
       )}
 

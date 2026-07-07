@@ -346,3 +346,81 @@ export const getShoppingAssistantResponse = async (params: {
 
   return normalizeAiResponse(response, params.message);
 };
+
+export const filterProductsWithAI = async (
+  products: any[],
+  userIntent: string,
+  userMessage: string,
+  filters: any
+): Promise<{ filteredIds: number[]; reasoning: string }> => {
+  if (!products || !Array.isArray(products) || products.length === 0) {
+    return { filteredIds: [], reasoning: "No products provided" };
+  }
+
+  const productSummaries = products.slice(0, 30).map((p: any) => ({
+    id: p.id,
+    title: p.title,
+    category: p.category,
+    price: p.price,
+    description: p.description ? p.description.substring(0, 120) : "",
+    brand: p.brand || "",
+    tags: p.tags || [],
+  }));
+
+  const filtersStr = JSON.stringify(filters || {});
+
+  const prompt = `
+You are a product relevance filter for an ecommerce AI shopping assistant.
+
+A customer said: "${userMessage}"
+Their intent: "${userIntent}"
+Filters extracted: ${filtersStr}
+
+Below is a list of products fetched from the store database.
+Your job: Read each product carefully and select ONLY the ones that genuinely match what the customer is asking for.
+
+Be intelligent but FORGIVING. The store's catalog is limited.
+- If they ask for "instant food" but we only have Ice Cream, Juice, and Apple, select those as the closest ready-to-eat options.
+- If they ask for "ingredients" but we only have Rice, Eggs, and Cooking Oil, pick those.
+- ALWAYS try to find at least 1-4 products that somewhat fit the request. Only return an empty array if absolutely nothing is even remotely relevant.
+
+Products to evaluate:
+${JSON.stringify(productSummaries, null, 2)}
+
+Return ONLY valid JSON. No markdown. No explanation.
+
+{
+  "filteredIds": [1, 2, 3],
+  "reasoning": "brief explanation of why you selected these"
+}
+
+Rules:
+- filteredIds must be an array of product IDs (numbers) from the list above
+- Return maximum 6 products
+- Return minimum 0 products (empty array if nothing fits)
+- NEVER invent IDs not in the list
+`;
+
+  try {
+    const aiResult = await callNvidiaAI({
+      model: process.env.NVIDIA_MODEL || DEFAULT_MODEL,
+      prompt,
+      temperature: 0.2,
+      maxTokens: 512,
+    });
+
+    if (!aiResult || aiResult.error || !Array.isArray(aiResult.filteredIds)) {
+      return { filteredIds: products.slice(0, 4).map((p) => p.id), reasoning: "AI fallback" };
+    }
+
+    const validIds = new Set(products.map((p: any) => p.id));
+    const safeIds = aiResult.filteredIds
+      .filter((id: any) => typeof id === "number" && validIds.has(id))
+      .slice(0, 6);
+
+    return { filteredIds: safeIds, reasoning: aiResult.reasoning || "" };
+  } catch (error) {
+    console.error("AI Filter error:", error);
+    return { filteredIds: products.slice(0, 4).map((p) => p.id), reasoning: "Error fallback" };
+  }
+};

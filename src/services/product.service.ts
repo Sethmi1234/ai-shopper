@@ -217,7 +217,11 @@ export const searchProductsBySpec = async (spec: ProductSearchSpec) => {
 
   const res = await api.get("/products?limit=100");
   const products = filterProducts(res.data?.products || [], maxPrice, keywords, minPrice);
-  return { products };
+  if (products.length > 0) return { products };
+  
+  // If keyword match fails completely across the entire catalog, just return price-matched products!
+  const priceOnlyProducts = filterProducts(res.data?.products || [], maxPrice, null, minPrice);
+  return { products: priceOnlyProducts };
 };
 
 export const searchProductsByPrompt = async (prompt: string) => {
