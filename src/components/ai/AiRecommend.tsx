@@ -34,7 +34,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
     setIsLoading(true);
 
     try {
-      // STEP 1: Classify intent using the new classify API
+      // STEP 1: Classify intent using the AI classify API
       const classifyRes = await fetch("/api/ai/classify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -45,74 +45,52 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
       console.log("CLASSIFICATION:", classifyData);
 
       // STEP 2: Fetch products by category
-      let products = [];
+      let fetchedProducts: any[] = [];
       let category = classifyData.category || "general";
-      let maxPrice: number | null = null;
-      let minPrice: number | null = null;
 
       if (category !== "general") {
-        // Fetch products from the specific category
         const res = await fetch(
           `${process.env.NEXT_PUBLIC_BASE_URL || "https://dummyjson.com"}/products/category/${category}`
         );
         const data = await res.json();
-        products = data.products || [];
+        fetchedProducts = data.products || [];
 
-        // STEP 3: Extract price filters from user message
-        const lowerText = text.toLowerCase();
+        // STEP 3: Send ALL candidate products + user prompt to AI for intelligent filtering
+        // This replaces the old regex price extraction and keyword filtering
+        const filterRes = await fetch("/api/ai/filter-products", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            prompt: text.trim(),
+            products: fetchedProducts,
+          }),
+        });
 
-        // Extract max price (e.g., "under $1000", "max 500", "below 200")
-        const maxPriceMatch = lowerText.match(/(?:under|below|max|less than|cheaper than|budget)\s*[$]?\s*(\d+)/i);
-        if (maxPriceMatch) {
-          maxPrice = parseInt(maxPriceMatch[1], 10);
-        }
+        const filterData = await filterRes.json();
+        console.log("AI FILTER RESULT:", filterData);
 
-        // Extract min price (e.g., "above $500", "min 200", "over 100")
-        const minPriceMatch = lowerText.match(/(?:above|over|min|more than|at least)\s*[$]?\s*(\d+)/i);
-        if (minPriceMatch) {
-          minPrice = parseInt(minPriceMatch[1], 10);
-        }
+        // STEP 4: Filter products based on AI scores (only keep score >= 0.7)
+        if (filterData.matches && Array.isArray(filterData.matches)) {
+          const selectedIds = new Set(
+            filterData.matches
+              .filter((m: any) => m.score >= 0.7)
+              .map((m: any) => m.id)
+          );
 
-        // Apply price filters
-        if (maxPrice !== null) {
-          products = products.filter((p: any) => p.price <= maxPrice!);
-        }
-        if (minPrice !== null) {
-          products = products.filter((p: any) => p.price >= minPrice!);
-        }
-
-        // STEP 4: Optional keyword filtering (A+ upgrade)
-        // Extract keywords from user message for filtering
-        const keywords = text
-          .toLowerCase()
-          .split(/\s+/)
-          .filter((word) => word.length > 2 && !["what", "show", "find", "looking", "for", "have", "the", "a", "an", "in", "under", "cheap", "best", "recommend", "max", "min", "above", "below", "over", "less", "more", "than", "budget", "at", "least"].includes(word));
-
-        if (keywords.length > 0) {
-          products = products.filter((p: any) =>
-            keywords.some((keyword) =>
-              p.title?.toLowerCase().includes(keyword) ||
-              p.description?.toLowerCase().includes(keyword) ||
-              p.category?.toLowerCase().includes(keyword)
-            )
+          fetchedProducts = fetchedProducts.filter((p: any) =>
+            selectedIds.has(p.id)
           );
         }
-
-        // Limit to 6 products for display
-        products = products.slice(0, 6);
       }
 
-      // STEP 5: Generate AI reply based on classification
+      // STEP 5: Generate AI reply based on results
       if (category === "general") {
         setError("I couldn't determine what category you're looking for. Try being more specific, like 'laptops under $1000' or 'skincare products'.");
-      } else if (products.length === 0) {
-        setError(`I searched in the ${category} category but couldn't find matching products. Try adjusting your price range or browse our full catalog.`);
+      } else if (fetchedProducts.length === 0) {
+        setError(`I searched in the ${category} category but couldn't find matching products. Try adjusting your description or browse our full catalog.`);
       } else {
-        const priceInfo = maxPrice || minPrice
-          ? ` within your ${maxPrice ? `max $${maxPrice}` : `min $${minPrice}`} budget`
-          : "";
-        setAiReply(`Found ${products.length} product${products.length !== 1 ? "s" : ""} in ${category}${priceInfo} for you!`);
-        setProducts(products);
+        setAiReply(`Found ${fetchedProducts.length} product${fetchedProducts.length !== 1 ? "s" : ""} in ${category} that match your request!`);
+        setProducts(fetchedProducts);
       }
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
@@ -142,7 +120,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
           <div className="flex flex-col items-center justify-center py-10 gap-3 text-gray-500">
             <Loader2 className="animate-spin text-blue-600" size={32} />
             <p className="text-sm font-medium">Finding products for you...</p>
-            <p className="text-xs text-gray-400">This should return quickly for keyword-based prompt search.</p>
+            <p className="text-xs text-gray-400">AI is analyzing products to find the best matches.</p>
           </div>
         )}
 
@@ -194,7 +172,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
       <h3 className="text-lg font-semibold mb-3">AI Product Recommendation</h3>
       <p className="text-sm text-gray-500 mb-4">
-        Describe what you need and the system will search the product catalog by keywords and price.
+        Describe what you need and the AI will intelligently find the best matching products.
       </p>
 
       <textarea
@@ -202,7 +180,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
         onChange={(e) => setLocalPrompt(e.target.value)}
         rows={3}
         className="w-full p-3 border rounded-lg mb-3"
-        placeholder="e.g. Recommend gaming laptops under $1000"
+        placeholder="e.g. Recommend healthy breakfast food under $20"
       />
 
       <div className="flex items-center gap-3">
