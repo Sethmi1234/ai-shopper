@@ -82,13 +82,24 @@ export default function Navbar() {
             </Link>
 
             {username ? (
-              <div className="hidden sm:flex items-center gap-2 relative group cursor-pointer text-gray-800">
+              <div className="hidden sm:flex items-center gap-2 relative group text-gray-800">
                 <User size={20} strokeWidth={2.5} />
-                <span className="text-sm font-bold truncate max-w-[100px]">{username}</span>
-                <div className="absolute top-full right-0 mt-2 w-32 bg-white shadow-lg border border-gray-100 py-2 hidden group-hover:block z-50">
+                <span className="text-sm font-bold truncate max-w-[100px] cursor-default">{username}</span>
+                <div className="absolute top-full right-0 mt-2 w-36 bg-white shadow-lg border border-gray-100 py-2 invisible opacity-0 group-hover:visible group-hover:opacity-100 transition-all duration-200 z-50">
+                  <span className="block px-4 py-2 text-xs text-gray-400 font-medium">Signed in as</span>
+                  <span className="block px-4 py-1 text-sm font-semibold text-gray-700">{username}</span>
+                  <hr className="my-1 border-gray-100" />
+                  <Link
+                    href="/dashboard/profile"
+                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 flex items-center gap-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <User size={16} /> My Profile
+                  </Link>
+                  <hr className="my-1 border-gray-100" />
                   <button
                     onClick={handleLogout}
-                    className="w-full text-left px-4 py-1 text-sm text-red-600 hover:bg-gray-50 flex items-center gap-2"
+                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50 flex items-center gap-2"
                   >
                     <LogOut size={16} /> Logout
                   </button>
