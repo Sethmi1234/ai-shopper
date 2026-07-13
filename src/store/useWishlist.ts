@@ -1,17 +1,12 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { WishlistItem as ServiceWishlistItem } from "@/services/wishlist.service";
 
-export type WishlistItem = {
-  id: number;
-  title: string;
-  price: number;
-  thumbnail?: string;
-  category?: string;
-  rating?: number;
-};
+export type WishlistItem = ServiceWishlistItem;
 
+// Legacy interface for backward compatibility
+// Components should migrate to using React Query hooks directly
 type WishlistState = {
-  items: WishlistItem[];
+  // Legacy methods - these will be deprecated
   toggleItem: (item: WishlistItem) => void;
   addItem: (item: WishlistItem) => void;
   removeItem: (id: number) => void;
@@ -19,38 +14,23 @@ type WishlistState = {
   clearWishlist: () => void;
 };
 
-export const useWishlist = create<WishlistState>()(
-  persist(
-    (set, get) => ({
-      items: [],
-
-      toggleItem: (item) => {
-        const exists = get().items.find((i) => i.id === item.id);
-        if (exists) {
-          set((state) => ({ items: state.items.filter((i) => i.id !== item.id) }));
-        } else {
-          set((state) => ({ items: [...state.items, item] }));
-        }
-      },
-
-      addItem: (item) => {
-        const exists = get().items.find((i) => i.id === item.id);
-        if (!exists) {
-          set((state) => ({ items: [...state.items, item] }));
-        }
-      },
-
-      removeItem: (id) =>
-        set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
-
-      isWishlisted: (id) => get().items.some((i) => i.id === id),
-
-      clearWishlist: () => set({ items: [] }),
-    }),
-    {
-      name: "ai-shopper-wishlist",
-    }
-  )
-);
+// Note: This store is now a stub for backward compatibility.
+// Components should use the React Query hooks from @/hooks/useWishlist instead.
+// The actual wishlist data is managed by the backend and fetched via React Query.
+export const useWishlist = create<WishlistState>(() => ({
+  toggleItem: () => {
+    console.warn("useWishlist.toggleItem is deprecated. Use useAddWishlistItem/useRemoveWishlistItem hooks from @/hooks/useWishlist instead.");
+  },
+  addItem: () => {
+    console.warn("useWishlist.addItem is deprecated. Use useAddWishlistItem hook from @/hooks/useWishlist instead.");
+  },
+  removeItem: () => {
+    console.warn("useWishlist.removeItem is deprecated. Use useRemoveWishlistItem hook from @/hooks/useWishlist instead.");
+  },
+  isWishlisted: () => false,
+  clearWishlist: () => {
+    console.warn("useWishlist.clearWishlist is deprecated. Use useClearWishlist hook from @/hooks/useWishlist instead.");
+  },
+}));
 
 export default useWishlist;
