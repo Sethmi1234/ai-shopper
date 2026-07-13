@@ -4,6 +4,7 @@ import cookieParser from "cookie-parser";
 
 import authRoutes from "./routes/auth.routes";
 import cartRoutes from "./routes/cart.routes";
+import wishlistRoutes from "./routes/wishlist.routes";
 
 
 const app = express();
@@ -41,6 +42,11 @@ app.use(
 app.use(
     "/cart",
     cartRoutes
+);
+
+app.use(
+"/wishlist",
+wishlistRoutes
 );
 
 export default app;
