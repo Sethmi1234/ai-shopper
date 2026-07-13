@@ -6,6 +6,7 @@ import authRoutes from "./routes/auth.routes";
 import cartRoutes from "./routes/cart.routes";
 import wishlistRoutes from "./routes/wishlist.routes";
 import orderRoutes from "./routes/order.routes";
+import aiRoutes from "./routes/ai.routes";
 
 
 const app = express();
@@ -53,6 +54,11 @@ wishlistRoutes
 app.use(
 "/orders",
 orderRoutes
+);
+
+app.use(
+"/ai",
+aiRoutes
 );
 
 export default app;
