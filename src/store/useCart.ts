@@ -1,59 +1,38 @@
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { CartItem as ServiceCartItem } from "@/services/cart.service";
 
-export type CartItem = {
-  id: number;
-  title: string;
-  price: number;
-  quantity: number;
-  thumbnail?: string;
-  category?: string;
-};
+export type CartItem = ServiceCartItem;
 
+// Legacy interface for backward compatibility
+// Components should migrate to using React Query hooks directly
 type CartState = {
-  items: CartItem[];
-  addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => void;
-  removeItem: (id: number) => void;
-  updateQuantity: (id: number, quantity: number) => void;
+  // Legacy methods - these will be deprecated
+  addItem: (item: Omit<CartItem, "quantity" | "id">, quantity?: number) => void;
+  removeItem: (id: string) => void;
+  updateQuantity: (id: string, quantity: number) => void;
   clearCart: () => void;
   getTotalItems: () => number;
   getTotalPrice: () => number;
 };
 
-export const useCart = create<CartState>()(
-  persist(
-    (set, get) => ({
-      items: [],
-      addItem: (item, quantity = 1) => {
-        set((state) => {
-          const exists = state.items.find((i) => i.id === item.id);
-          if (exists) {
-            return {
-              items: state.items.map((i) =>
-                i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i
-              ),
-            };
-          }
-          return { items: [...state.items, { ...item, quantity }] };
-        });
-      },
-      removeItem: (id) =>
-        set((state) => ({ items: state.items.filter((i) => i.id !== id) })),
-      updateQuantity: (id, quantity) =>
-        set((state) => ({
-          items: state.items
-            .map((i) => (i.id === id ? { ...i, quantity: Math.max(0, quantity) } : i))
-            .filter((i) => i.quantity > 0),
-        })),
-      clearCart: () => set({ items: [] }),
-      getTotalItems: () => get().items.reduce((sum, i) => sum + i.quantity, 0),
-      getTotalPrice: () =>
-        get().items.reduce((sum, i) => sum + i.quantity * Number(i.price || 0), 0),
-    }),
-    {
-      name: "ai-shopper-cart",
-    }
-  )
-);
+// Note: This store is now a stub for backward compatibility.
+// Components should use the React Query hooks from @/hooks/useCart instead.
+// The actual cart data is managed by the backend and fetched via React Query.
+export const useCart = create<CartState>(() => ({
+  addItem: () => {
+    console.warn("useCart.addItem is deprecated. Use useAddCartItem hook from @/hooks/useCart instead.");
+  },
+  removeItem: () => {
+    console.warn("useCart.removeItem is deprecated. Use useRemoveCartItem hook from @/hooks/useCart instead.");
+  },
+  updateQuantity: () => {
+    console.warn("useCart.updateQuantity is deprecated. Use useUpdateCartItem hook from @/hooks/useCart instead.");
+  },
+  clearCart: () => {
+    console.warn("useCart.clearCart is deprecated. Use useClearCart hook from @/hooks/useCart instead.");
+  },
+  getTotalItems: () => 0,
+  getTotalPrice: () => 0,
+}));
 
 export default useCart;

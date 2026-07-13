@@ -58,7 +58,8 @@
 | **TanStack React Query 5** | Server state & caching |
 | **Axios** | HTTP client with interceptors |
 | **NVIDIA Mistral Large 3 API** | AI chat & product search |
-| **DummyJSON API** | Product data source |
+| **Express.js Backend** | Custom API (cart, wishlist, orders, auth) |
+| **DummyJSON API** | Fallback product data source |
 | **Lucide React** | Icon library |
 
 ---
@@ -88,6 +89,10 @@ cp .env.example .env
 Create a `.env` file in the root directory:
 
 ```env
+# Backend API URL (for custom backend integration)
+NEXT_PUBLIC_API_URL=http://localhost:5000
+
+# Fallback to DummyJSON if no backend is available
 NEXT_PUBLIC_BASE_URL=https://dummyjson.com
 NVIDIA_API_KEY=nvapi-your-key-here
 NVIDIA_MODEL=mistralai/mistral-large-3-675b-instruct-2512
@@ -95,6 +100,44 @@ NVIDIA_BUILD_URL=https://integrate.api.nvidia.com/v1
 ```
 
 > **Note:** The NVIDIA API key is optional. Without it, the chatbot and AI search will fall back to keyword-based matching.
+
+### Backend Integration
+
+This frontend is designed to work with a custom Express.js backend. To connect your backend:
+
+1. **Set Backend URL:**
+   ```env
+   NEXT_PUBLIC_API_URL=http://localhost:5000
+   ```
+
+2. **Backend API Endpoints:**
+   - `POST /auth/login` - User authentication
+   - `POST /auth/refresh` - Token refresh
+   - `GET /auth/me` - Get current user
+   - `GET /cart` - Get cart items
+   - `POST /cart/items` - Add item to cart
+   - `PATCH /cart/items/:id` - Update cart item
+   - `DELETE /cart/items/:id` - Remove cart item
+   - `DELETE /cart` - Clear cart
+   - `GET /wishlist` - Get wishlist items
+   - `POST /wishlist/items` - Add to wishlist
+   - `DELETE /wishlist/items/:id` - Remove from wishlist
+   - `POST /orders` - Create order
+   - `GET /orders` - Get user orders
+   - `GET /orders/:id` - Get order by ID
+
+3. **Authentication:**
+   - The frontend uses JWT tokens (accessToken/refreshToken)
+   - Tokens are stored in localStorage
+   - Axios interceptors handle automatic token refresh on 401 errors
+
+4. **React Query Integration:**
+   - Cart: Use hooks from `@/hooks/useCart`
+   - Wishlist: Use hooks from `@/hooks/useWishlist`
+   - Orders: Use hooks from `@/hooks/useOrders`
+
+**Without Backend:**
+If no backend is running, the frontend will fall back to DummyJSON for product data only. Cart and wishlist will use localStorage stubs with deprecation warnings.
 
 ### Run Development Server
 
