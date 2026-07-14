@@ -1,4 +1,6 @@
 /** @type {import('next').NextConfig} */
+const BACKEND_URL = process.env.BACKEND_URL || process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 const nextConfig = {
   images: {
     remotePatterns: [
@@ -15,6 +17,16 @@ const nextConfig = {
         hostname: "cdn.dummyjson.com",
       },
     ],
+  },
+
+  // Proxy /api/* → backend so frontend can call /api/ai/classify etc. without CORS issues
+  async rewrites() {
+    return [
+      {
+        source: "/api/:path*",
+        destination: `${BACKEND_URL}/:path*`,
+      },
+    ];
   },
 };
 

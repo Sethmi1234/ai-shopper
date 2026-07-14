@@ -15,6 +15,7 @@ export const protect = async (
   res: Response,
   next: NextFunction
 ) => {
+  console.log("Protect middleware called for:", req.originalUrl);
   try {
     const authHeader = req.headers.authorization;
 

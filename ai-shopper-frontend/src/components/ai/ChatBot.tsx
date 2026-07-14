@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+
 import { useWishlist as useWishlistQuery, useAddWishlistItem, useRemoveWishlistItem } from "../../hooks/useWishlist";
 import { useCart as useCartQuery, useAddCartItem } from "../../hooks/useCart";
 
@@ -79,7 +80,8 @@ export default function ChatBot() {
   
   // Helper functions
   const isWishlisted = (id: number) => {
-    return wishlistData?.items?.some((item: any) => item.productId === String(id)) || false;
+    const items = wishlistData?.products || (wishlistData as any)?.items || [];
+    return items.some((item: any) => item.productId === String(id)) || false;
   };
   
   const toggleItem = (item: any) => {
@@ -94,7 +96,8 @@ export default function ChatBot() {
     
     if (isWishlisted(item.id)) {
       // Find the wishlist item ID and remove it
-      const existingItem = wishlistData?.items?.find((i: any) => i.productId === String(item.id));
+      const items = wishlistData?.products || (wishlistData as any)?.items || [];
+      const existingItem = items.find((i: any) => i.productId === String(item.id));
       if (existingItem) {
         removeWishlistMutation.mutate(existingItem.id);
       }
@@ -166,30 +169,43 @@ export default function ChatBot() {
     setLoadingStage("thinking");
 
     try {
-      // ── Stage 1: AI intent classification ────────────────────────────────
-      const classifyRes = await fetch(`${process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000"}/ai/classify`, {
+      // Build conversation context
+      const conversationContext = conversationHistory
+        .slice(-6) // Keep last few turns
+        .map((m) => `${m.role === "user" ? "User" : "AI"}: ${m.content}`)
+        .join("\n");
+
+      // ── Stage 1: Call classify via backend (through Next.js proxy) ──
+      // classify is a public endpoint (no auth required)
+      const classifyResponse = await fetch("/api/ai/classify", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ message: text }),
       });
 
-      if (!classifyRes.ok) throw new Error(`Classification error ${classifyRes.status}`);
+      if (!classifyResponse.ok) {
+        const errText = await classifyResponse.text();
+        console.error(`Classify error ${classifyResponse.status}:`, errText);
+        throw Object.assign(new Error("Request failed"), { status: classifyResponse.status });
+      }
+
+      const classifyData = await classifyResponse.json();
       
-      const classifyData = await classifyRes.json();
-      
-      // ── Stage 2: Fetch products based on classification ─────────────────────
-      let products = [];
+      // ── Stage 2: Fetch products from DummyJSON based on classification ──
+      let products: Product[] = [];
       let category = classifyData.category || "general";
       let maxPrice: number | null = null;
       let minPrice: number | null = null;
+      let reply = "";
+      let isFollowUp = false;
 
       if (category !== "general") {
         setLoadingStage("searching");
-        
+
         // Fetch products from DummyJSON
-        const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://dummyjson.com";
-        const res = await fetch(`${baseUrl}/products/category/${category}`);
-        const data = await res.json();
+        const baseUrl = process.env.NEXT_PUBLIC_DUMMYJSON_URL || "https://dummyjson.com";
+        const productsRes = await fetch(`${baseUrl}/products/category/${category}`);
+        const data = await productsRes.json();
         products = data.products || [];
 
         // Extract price filters from user message
@@ -227,13 +243,12 @@ export default function ChatBot() {
             )
           );
         }
-        
+
         setLoadingStage("filtering");
         await new Promise((r) => setTimeout(r, 300));
       }
 
       // Generate AI reply based on classification
-      let reply = "";
       if (category === "general") {
         reply = getFallbackResponse(text);
       } else if (products.length === 0) {
@@ -249,6 +264,7 @@ export default function ChatBot() {
         role: "assistant",
         text: reply,
         products: products.length > 0 ? products.slice(0, 6) : undefined,
+        isFollowUp,
       };
 
       setMessages((prev) => [...prev, assistantMsg]);
@@ -258,13 +274,28 @@ export default function ChatBot() {
         ...prev,
         { role: "assistant", content: reply },
       ]);
-    } catch (err) {
+    } catch (err: any) {
       console.error("ChatBot error:", err);
+
+      // Handle specific HTTP error codes
+      // err.status: from custom errors thrown with fetch (our Object.assign pattern)
+      // err.response.status: from axios errors
+      const status = err?.status ?? err?.response?.status;
+
+      let errorText = "Sorry, I'm having trouble connecting. Please make sure the backend server is running and try again.";
+      if (status === 429) {
+        errorText = "You're sending messages too fast! Please wait a moment before trying again. ⏳";
+      } else if (status === 401) {
+        errorText = "Please log in to use the AI assistant.";
+      } else if (status >= 500) {
+        errorText = "The AI service is temporarily unavailable. Please try again in a moment.";
+      }
+
       setMessages((prev) => [
         ...prev,
         {
           role: "assistant",
-          text: "Sorry, I had a hiccup! Please try again.",
+          text: errorText,
         },
       ]);
     } finally {
