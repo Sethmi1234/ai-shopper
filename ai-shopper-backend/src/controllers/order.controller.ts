@@ -100,17 +100,34 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
   }
 };
 
-// GET /orders - List user's orders
+// GET /orders - List user's orders with pagination
 export const getOrders = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
 
-    const orders = await Order.find({ user: userId }).sort({
-      createdAt: -1,
+    const page = Number(req.query.page) || 1;
+    const limit = Number(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    const orders = await Order.find({ user: userId })
+      .skip(skip)
+      .limit(limit)
+      .sort({
+        createdAt: -1,
+      });
+
+    const totalOrders = await Order.countDocuments({
+      user: userId,
     });
 
     res.status(200).json({
       orders,
+      pagination: {
+        currentPage: page,
+        totalPages: Math.ceil(totalOrders / limit),
+        totalOrders,
+        limit,
+      },
     });
   } catch (error) {
     res.status(500).json({
