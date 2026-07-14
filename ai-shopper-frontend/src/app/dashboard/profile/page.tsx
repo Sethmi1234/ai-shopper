@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
-import { Loader2, ChevronRight, User, Mail, Phone, Calendar, MapPin, Globe, Shield, Tag } from "lucide-react";
+import { Loader2, ChevronRight, User, Mail, Shield } from "lucide-react";
 import { useAuthUser } from "../../../hooks/useAuthUser";
 
 export default function ProfilePage() {
-  const { data: user, isLoading, error } = useAuthUser();
+  const { data: response, isLoading, error } = useAuthUser();
 
-  console.log("Auth user data:", user);
+  // Extract user from response (backend returns { user: { id, name, email } })
+  const user = response?.user || response;
 
   if (isLoading) {
     return (
@@ -37,7 +37,7 @@ export default function ProfilePage() {
     );
   }
 
-  const fullName = `${user.firstName || ""} ${user.lastName || ""}`.trim() || user.username;
+  const displayName = user.name || user.firstName || user.username || "User";
 
   return (
     <div className="min-h-screen bg-white">
@@ -55,26 +55,16 @@ export default function ProfilePage() {
           <div className="flex items-center gap-6">
             {/* Avatar */}
             <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full border-4 border-white/30 overflow-hidden bg-white/10 shrink-0">
-              {user.image ? (
-                <Image
-                  src={user.image}
-                  alt={fullName}
-                  fill
-                  className="object-cover"
-                  unoptimized
-                />
-              ) : (
-                <div className="w-full h-full flex items-center justify-center text-white/70">
-                  <User size={40} />
-                </div>
-              )}
+              <div className="w-full h-full flex items-center justify-center text-white/70">
+                <User size={40} />
+              </div>
             </div>
             <div>
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-                {fullName}
+                {displayName}
               </h1>
-              <p className="text-gray-400 text-sm mt-1">@{user.username}</p>
-              <p className="text-gray-500 text-xs mt-1 capitalize">{user.role || "Member"}</p>
+              <p className="text-gray-400 text-sm mt-1">{user.email || ""}</p>
+              <p className="text-gray-500 text-xs mt-1 capitalize">Member</p>
             </div>
           </div>
         </div>
@@ -94,20 +84,16 @@ export default function ProfilePage() {
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">First Name</p>
-                  <p className="text-sm font-medium text-gray-900">{user.firstName || "—"}</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Name</p>
+                  <p className="text-sm font-medium text-gray-900">{user.name || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Last Name</p>
-                  <p className="text-sm font-medium text-gray-900">{user.lastName || "—"}</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Email</p>
+                  <p className="text-sm font-medium text-gray-900">{user.email || "—"}</p>
                 </div>
                 <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Username</p>
-                  <p className="text-sm font-medium text-gray-900">@{user.username}</p>
-                </div>
-                <div>
-                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Gender</p>
-                  <p className="text-sm font-medium text-gray-900 capitalize">{user.gender || "—"}</p>
+                  <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">User ID</p>
+                  <p className="text-sm font-mono font-medium text-gray-900">{user.id || user._id || "—"}</p>
                 </div>
               </div>
             </div>
@@ -129,72 +115,8 @@ export default function ProfilePage() {
                     <p className="text-sm font-medium text-gray-900">{user.email || "—"}</p>
                   </div>
                 </div>
-                {user.phone && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                      <Phone size={16} className="text-black" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Phone</p>
-                      <p className="text-sm font-medium text-gray-900">{user.phone}</p>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
-
-            {/* Address Card */}
-            {(user.address || user.company?.address) && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-                  <MapPin size={18} className="text-black" />
-                  Address
-                </h2>
-
-                <div className="space-y-4">
-                  {user.address && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <MapPin size={16} className="text-black" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Address</p>
-                        <p className="text-sm font-medium text-gray-900">
-                          {[
-                            user.address.address,
-                            user.address.city,
-                            user.address.state,
-                            user.address.postalCode,
-                          ]
-                            .filter(Boolean)
-                            .join(", ") || "—"}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                  {user.company?.address && (
-                    <div className="flex items-start gap-3">
-                      <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0 mt-0.5">
-                        <MapPin size={16} className="text-black" />
-                      </div>
-                      <div>
-                        <p className="text-xs text-gray-500">Company Address</p>
-                        <p className="text-sm font-medium text-gray-900">
-                          {[
-                            user.company.address.address,
-                            user.company.address.city,
-                            user.company.address.state,
-                            user.company.address.postalCode,
-                          ]
-                            .filter(Boolean)
-                            .join(", ") || "—"}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
 
           {/* Right Column */}
@@ -209,98 +131,24 @@ export default function ProfilePage() {
               <div className="space-y-4">
                 <div className="flex items-center gap-3">
                   <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                    <Tag size={16} className="text-black" />
+                    <User size={16} className="text-black" />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">User ID</p>
-                    <p className="text-sm font-mono font-medium text-gray-900">#{user.id}</p>
+                    <p className="text-sm font-mono font-medium text-gray-900">#{user.id || user._id || "—"}</p>
                   </div>
                 </div>
-                {user.role && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                      <Shield size={16} className="text-black" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Role</p>
-                      <p className="text-sm font-medium text-gray-900 capitalize">{user.role}</p>
-                    </div>
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
+                    <Shield size={16} className="text-black" />
                   </div>
-                )}
-                {user.birthDate && (
-                  <div className="flex items-center gap-3">
-                    <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center shrink-0">
-                      <Calendar size={16} className="text-black" />
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Birth Date</p>
-                      <p className="text-sm font-medium text-gray-900">{new Date(user.birthDate).toLocaleDateString()}</p>
-                    </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Role</p>
+                    <p className="text-sm font-medium text-gray-900 capitalize">Member</p>
                   </div>
-                )}
+                </div>
               </div>
             </div>
-
-            {/* Company Card */}
-            {user.company && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-5 flex items-center gap-2">
-                  <Globe size={18} className="text-black" />
-                  Company
-                </h2>
-
-                <div className="space-y-4">
-                  {user.company.name && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Company Name</p>
-                      <p className="text-sm font-medium text-gray-900">{user.company.name}</p>
-                    </div>
-                  )}
-                  {user.company.title && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Title</p>
-                      <p className="text-sm font-medium text-gray-900">{user.company.title}</p>
-                    </div>
-                  )}
-                  {user.company.department && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Department</p>
-                      <p className="text-sm font-medium text-gray-900">{user.company.department}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Bank Card */}
-            {user.bank && (
-              <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <h2 className="text-lg font-bold text-gray-900 mb-5">Bank Details</h2>
-
-                <div className="space-y-3">
-                  {user.bank.cardNumber && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Card Number</p>
-                      <p className="text-sm font-mono font-medium text-gray-900">
-                        •••• {user.bank.cardNumber.slice(-4)}
-                      </p>
-                    </div>
-                  )}
-                  {user.bank.cardType && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">Card Type</p>
-                      <p className="text-sm font-medium text-gray-900 capitalize">{user.bank.cardType}</p>
-                    </div>
-                  )}
-                  {user.bank.iban && (
-                    <div>
-                      <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">IBAN</p>
-                      <p className="text-sm font-mono text-gray-900 truncate">{user.bank.iban}</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>

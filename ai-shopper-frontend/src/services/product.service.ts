@@ -1,4 +1,4 @@
-import api from "../lib/axios";
+import dummyApi from "../lib/dummyApi";
 
 export type ProductSearchSpec = {
   category?: string | null;
@@ -16,17 +16,17 @@ export const getProducts = async (limit?: number, skip?: number) => {
   if (limit && limit > 0) queryParts.push(`limit=${limit}`);
   if (skip && skip > 0) queryParts.push(`skip=${skip}`);
   const url = queryParts.length > 0 ? `/products?${queryParts.join("&")}` : "/products";
-  const res = await api.get(url);
+  const res = await dummyApi.get(url);
   return res.data;
 };
 
 export const getProductById = async (id: number) => {
-  const res = await api.get(`/products/${id}`);
+  const res = await dummyApi.get(`/products/${id}`);
   return res.data;
 };
 
 export const getCategories = async () => {
-  const res = await api.get("/products/categories");
+  const res = await dummyApi.get("/products/categories");
   return res.data;
 };
 
@@ -192,7 +192,7 @@ export const searchProductsBySpec = async (spec: ProductSearchSpec) => {
 
   if (category) {
     try {
-      const res = await api.get(`/products/category/${encodeURIComponent(category)}`);
+      const res = await dummyApi.get(`/products/category/${encodeURIComponent(category)}`);
       const categoryProducts = res.data?.products || [];
       const products = filterProducts(categoryProducts, maxPrice, keywords, minPrice);
       if (products.length > 0) return { products };
@@ -207,7 +207,7 @@ export const searchProductsBySpec = async (spec: ProductSearchSpec) => {
   const q = keywords?.length ? keywords.join(" ") : category || "";
   if (q) {
     try {
-      const res = await api.get(`/products/search?q=${encodeURIComponent(q)}`);
+      const res = await dummyApi.get(`/products/search?q=${encodeURIComponent(q)}`);
       const products = filterProducts(res.data?.products || [], maxPrice, keywords, minPrice);
       if (products.length > 0) return { products };
     } catch {
@@ -215,7 +215,7 @@ export const searchProductsBySpec = async (spec: ProductSearchSpec) => {
     }
   }
 
-  const res = await api.get("/products?limit=100");
+  const res = await dummyApi.get("/products?limit=100");
   const products = filterProducts(res.data?.products || [], maxPrice, keywords, minPrice);
   if (products.length > 0) return { products };
   

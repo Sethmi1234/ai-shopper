@@ -30,6 +30,39 @@ export default function ProductGrid() {
   const reviewCount = (p: any) =>
     Array.isArray(p.reviews) ? p.reviews.length : typeof p.reviews === "number" ? p.reviews : 42;
 
+  const handleWishlistToggle = async (e: React.MouseEvent, product: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await toggleItem({
+        id: product.id,
+        title: product.title,
+        price: Number(product.price),
+        thumbnail: product.thumbnail,
+        category: product.category,
+        rating: Number(product.rating),
+      });
+    } catch (err) {
+      console.warn("Failed to toggle wishlist", err);
+    }
+  };
+
+  const handleAddToCart = async (e: React.MouseEvent, product: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await addItem({
+        id: product.id,
+        title: product.title,
+        price: Number(product.price),
+        thumbnail: product.thumbnail,
+        category: product.category,
+      }, 1);
+    } catch (err) {
+      console.warn("Failed to add to cart", err);
+    }
+  };
+
   return (
     <div className="mt-16 md:mt-24">
       {/* Header */}
@@ -93,18 +126,7 @@ export default function ProductGrid() {
                     ) : <div />}
 
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        toggleItem({
-                          id: product.id,
-                          title: product.title,
-                          price: Number(product.price),
-                          thumbnail: product.thumbnail,
-                          category: product.category,
-                          rating: Number(product.rating),
-                        });
-                      }}
+                      onClick={(e) => handleWishlistToggle(e, product)}
                       className="bg-white p-2 text-black hover:bg-[#ccff00] transition-colors shadow-sm"
                     >
                       <Heart
@@ -118,17 +140,7 @@ export default function ProductGrid() {
                   {/* Hover Add to Cart */}
                   <div className="absolute bottom-0 left-0 w-full p-4 flex gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 bg-gradient-to-t from-black/60 to-transparent">
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        addItem({
-                          id: product.id,
-                          title: product.title,
-                          price: Number(product.price),
-                          thumbnail: product.thumbnail,
-                          category: product.category,
-                        }, 1);
-                      }}
+                      onClick={(e) => handleAddToCart(e, product)}
                       className="flex-1 bg-white hover:bg-black hover:text-white text-black py-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
                     >
                       <ShoppingBag size={14} /> Add to Cart

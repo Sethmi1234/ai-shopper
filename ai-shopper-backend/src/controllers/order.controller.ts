@@ -8,46 +8,94 @@ export const createOrder = async (req: AuthRequest, res: Response) => {
   try {
     const userId = req.user?.id;
 
-    // Find user's cart
-    const cart = await Cart.findOne({ user: userId });
+    // Get items from request body (frontend sends items directly)
+    // Fallback to MongoDB cart if no items in body
+    let items = req.body?.items;
+    let totalAmount = req.body?.totalAmount;
 
-    if (!cart || cart.items.length === 0) {
-      return res.status(400).json({
-        message: "Cart is empty",
+    if (!items || !Array.isArray(items) || items.length === 0) {
+      // Fallback: Find user's cart in MongoDB
+      const cart = await Cart.findOne({ user: userId });
+
+      if (!cart || cart.items.length === 0) {
+        return res.status(400).json({
+          message: "Cart is empty. Please add items to your cart before checkout.",
+        });
+      }
+
+      // Calculate total from cart
+      totalAmount = cart.items.reduce(
+        (total, item) => total + (item.price || 0) * item.quantity,
+        0
+      );
+
+      // Create order from cart items
+      const order = await Order.create({
+        user: userId,
+        items: cart.items.map((item) => ({
+          productId: item.productId,
+          title: item.title || "",
+          price: item.price || 0,
+          quantity: item.quantity,
+          thumbnail: item.thumbnail || "",
+        })),
+        totalAmount,
+        status: "pending",
+      });
+
+      // Clear cart after checkout
+      cart.items = [] as any;
+      await cart.save();
+
+      return res.status(201).json({
+        message: "Order created successfully",
+        order,
       });
     }
 
-    // Calculate total
-    const totalAmount = cart.items.reduce(
-      (total, item) => total + (item.price || 0) * item.quantity,
-      0
-    );
+    // Items provided in request body - use those directly
+    // Calculate total if not provided
+    if (!totalAmount) {
+      totalAmount = items.reduce(
+        (total: number, item: any) => total + (Number(item.price) || 0) * (Number(item.quantity) || 1),
+        0
+      );
+    }
 
-    // Create order (snapshot items at time of purchase)
+    // Create order with items from body
     const order = await Order.create({
       user: userId,
-      items: cart.items.map((item) => ({
-        productId: item.productId,
+      items: items.map((item: any) => ({
+        productId: String(item.productId || item.id || ""),
         title: item.title || "",
-        price: item.price || 0,
-        quantity: item.quantity,
+        price: Number(item.price) || 0,
+        quantity: Number(item.quantity) || 1,
         thumbnail: item.thumbnail || "",
       })),
-      totalAmount,
+      totalAmount: Number(totalAmount),
       status: "pending",
     });
 
-    // Clear cart after checkout
-    cart.items = [] as any;
-    await cart.save();
+    // Also clear the MongoDB cart if it exists
+    try {
+      const cart = await Cart.findOne({ user: userId });
+      if (cart) {
+        cart.items = [] as any;
+        await cart.save();
+      }
+    } catch (err) {
+      // Non-critical - order was already created
+      console.warn("Failed to clear cart after order", err);
+    }
 
     res.status(201).json({
       message: "Order created successfully",
       order,
     });
-  } catch (error) {
+  } catch (error: any) {
+    console.error("Order creation error:", error);
     res.status(500).json({
-      message: "Failed to create order",
+      message: error.message || "Failed to create order",
     });
   }
 };

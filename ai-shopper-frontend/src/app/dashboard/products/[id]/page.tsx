@@ -67,32 +67,40 @@ export default function ProductDetailPage() {
   const { toggleItem, isWishlisted } = useWishlist();
   const wishlisted = product ? isWishlisted(product.id) : false;
 
-  const handleAddToCart = () => {
+  const handleAddToCart = async () => {
     if (!product) return;
-    addItem(
-      {
+    try {
+      await addItem(
+        {
+          id: product.id,
+          title: product.title,
+          price: product.price,
+          thumbnail: product.thumbnail,
+          category: product.category,
+        },
+        quantity
+      );
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2500);
+    } catch (err) {
+      console.warn("Failed to add to cart", err);
+    }
+  };
+
+  const handleToggleWishlist = async () => {
+    if (!product) return;
+    try {
+      await toggleItem({
         id: product.id,
         title: product.title,
         price: product.price,
         thumbnail: product.thumbnail,
         category: product.category,
-      },
-      quantity
-    );
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2500);
-  };
-
-  const handleToggleWishlist = () => {
-    if (!product) return;
-    toggleItem({
-      id: product.id,
-      title: product.title,
-      price: product.price,
-      thumbnail: product.thumbnail,
-      category: product.category,
-      rating: product.rating,
-    });
+        rating: product.rating,
+      });
+    } catch (err) {
+      console.warn("Failed to toggle wishlist", err);
+    }
   };
 
   const images: string[] = product

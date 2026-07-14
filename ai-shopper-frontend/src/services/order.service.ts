@@ -2,48 +2,46 @@ import api from "../lib/axios";
 
 export type OrderItem = {
   productId: string;
+  id?: number;
   quantity: number;
   price: number;
   title?: string;
   thumbnail?: string;
-  category?: string;
-};
-
-export type ShippingAddress = {
-  street: string;
-  city: string;
-  state: string;
-  zipCode: string;
-  country: string;
 };
 
 export type Order = {
-  id: string;
-  userId: string;
+  _id: string;
+  user: string;
   items: OrderItem[];
-  total: number;
+  totalAmount: number;
   status: "pending" | "processing" | "shipped" | "delivered" | "cancelled";
-  shippingAddress: ShippingAddress;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
 };
 
-export type CreateOrderInput = {
-  items: OrderItem[];
-  shippingAddress: ShippingAddress;
+export type CreateOrderResponse = {
+  message: string;
+  order: Order;
 };
 
-export const createOrder = async (data: CreateOrderInput): Promise<Order> => {
-  const res = await api.post("/orders", data);
+export type OrdersResponse = {
+  orders: Order[];
+};
+
+export const createOrder = async (items: OrderItem[], totalAmount: number): Promise<CreateOrderResponse> => {
+  const res = await api.post("/orders", {
+    items,
+    totalAmount,
+  });
   return res.data;
 };
 
-export const getOrders = async (): Promise<Order[]> => {
+export const getOrders = async (): Promise<OrdersResponse> => {
   const res = await api.get("/orders");
   return res.data;
 };
 
-export const getOrderById = async (id: string): Promise<Order> => {
+export const getOrderById = async (id: string): Promise<{ order: Order }> => {
   const res = await api.get(`/orders/${id}`);
   return res.data;
 };
