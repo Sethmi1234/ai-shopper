@@ -172,8 +172,8 @@ ${fullConversation}`;
         url = `${baseUrl}/products/category/${encodeURIComponent(filters.category)}`;
       }
       
-      const res = await fetch(url);
-      const data = await res.json();
+      const productsRes = await fetch(url);
+      const data = await productsRes.json();
       rawProducts = data.products || [];
       
       // Apply price filters
