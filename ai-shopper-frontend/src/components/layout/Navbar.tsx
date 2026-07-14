@@ -17,11 +17,21 @@ export default function Navbar() {
   const wishlistCount = wishlistItems.length;
 
   useEffect(() => {
+    // First check for userName from login response
+    const storedName = localStorage.getItem("userName");
+    if (storedName) {
+      setUsername(storedName);
+      return;
+    }
+
+    // Fallback to authData
     const storedAuth = localStorage.getItem("authData");
     if (storedAuth) {
       try {
         const authData = JSON.parse(storedAuth);
-        if (authData?.firstName) {
+        if (authData?.user?.name) {
+          setUsername(authData.user.name);
+        } else if (authData?.firstName) {
           setUsername(authData.firstName);
         } else if (authData?.username) {
           setUsername(authData.username);

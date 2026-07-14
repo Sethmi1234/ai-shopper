@@ -11,13 +11,11 @@ export const loginUser = async (data: {
 export const refreshToken = async (refreshToken: string) => {
   const res = await api.post("/auth/refresh", {
     refreshToken,
-    expiresInMins: 60,
   });
   return res.data;
 };
 
 export const getAuthUser = async () => {
   const res = await api.get("/auth/me");
-
   return res.data;
 };

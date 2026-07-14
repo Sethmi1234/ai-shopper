@@ -109,6 +109,42 @@ export default function SalesPage() {
     return (price * (1 - discount / 100)).toFixed(2);
   };
 
+  const handleToggleWishlist = async (e: React.MouseEvent, product: any) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await toggleItem({
+        id: product.id,
+        title: product.title,
+        price: Number(product.price),
+        thumbnail: product.thumbnail,
+        category: product.category,
+        rating: Number(product.rating),
+      });
+    } catch (err) {
+      console.warn("Failed to toggle wishlist", err);
+    }
+  };
+
+  const handleAddToCart = async (e: React.MouseEvent, product: any, priceToUse?: number) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      await addItem(
+        {
+          id: product.id,
+          title: product.title,
+          price: priceToUse !== undefined ? priceToUse : Number(product.price),
+          thumbnail: product.thumbnail,
+          category: product.category,
+        },
+        1
+      );
+    } catch (err) {
+      console.warn("Failed to add to cart", err);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
@@ -281,17 +317,7 @@ export default function SalesPage() {
                     </div>
                     {/* Wishlist */}
                     <button
-                      onClick={(e) => {
-                        e.preventDefault();
-                        toggleItem({
-                          id: product.id,
-                          title: product.title,
-                          price: Number(product.price),
-                          thumbnail: product.thumbnail,
-                          category: product.category,
-                          rating: Number(product.rating),
-                        });
-                      }}
+                      onClick={(e) => handleToggleWishlist(e, product)}
                       className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm transition-all hover:scale-110"
                     >
                       <Heart
@@ -345,20 +371,7 @@ export default function SalesPage() {
                       </div>
                       <button
                         type="button"
-                        onClick={(e) => {
-                          e.preventDefault();
-                          e.stopPropagation();
-                          addItem(
-                            {
-                              id: product.id,
-                              title: product.title,
-                              price: Number(discountedPrice),
-                              thumbnail: product.thumbnail,
-                              category: product.category,
-                            },
-                            1
-                          );
-                        }}
+                        onClick={(e) => handleAddToCart(e, product, Number(discountedPrice))}
                         className="w-9 h-9 bg-red-600 flex items-center justify-center text-white hover:bg-red-700 hover:shadow-md transition-all rounded-lg"
                       >
                         <ShoppingCart size={15} />
@@ -413,17 +426,7 @@ export default function SalesPage() {
                         </span>
                       </div>
                       <button
-                        onClick={(e) => {
-                          e.preventDefault();
-                          toggleItem({
-                            id: product.id,
-                            title: product.title,
-                            price: Number(product.price),
-                            thumbnail: product.thumbnail,
-                            category: product.category,
-                            rating: Number(product.rating),
-                          });
-                        }}
+                        onClick={(e) => handleToggleWishlist(e, product)}
                         className="absolute bottom-3 right-3 bg-white/90 backdrop-blur-sm p-2 rounded-full shadow-sm transition-all hover:scale-110"
                       >
                         <Heart
@@ -461,20 +464,7 @@ export default function SalesPage() {
                         </div>
                         <button
                           type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            addItem(
-                              {
-                                id: product.id,
-                                title: product.title,
-                                price: Number(discountedPrice),
-                                thumbnail: product.thumbnail,
-                                category: product.category,
-                              },
-                              1
-                            );
-                          }}
+                          onClick={(e) => handleAddToCart(e, product, Number(discountedPrice))}
                           className="w-9 h-9 bg-green-600 flex items-center justify-center text-white hover:bg-green-700 transition-all rounded-lg"
                         >
                           <ShoppingCart size={15} />
@@ -501,7 +491,7 @@ export default function SalesPage() {
                     {formatCategoryName(category)}
                   </h2>
                   <p className="text-xs text-gray-500">
-                    Up to {avgDiscount}% off • {products.length} deals
+                    Up to {avgDiscount}% off &bull; {products.length} deals
                   </p>
                 </div>
               </div>

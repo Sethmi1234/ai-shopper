@@ -1,20 +1,86 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import useCart from "../../../store/useCart";
-import { ShoppingCart, X, Minus, Plus, CreditCard, Truck, Shield, CheckCircle, ArrowLeft } from "lucide-react";
+import { ShoppingCart, X, Minus, Plus, Truck, Shield, CheckCircle, ArrowLeft } from "lucide-react";
+import { useCreateOrder } from "../../../hooks/useOrders";
 
 export default function CartPage() {
   const items = useCart((state) => state.items);
   const updateQuantity = useCart((state) => state.updateQuantity);
   const removeItem = useCart((state) => state.removeItem);
   const clearCart = useCart((state) => state.clearCart);
+  const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [checkoutMessage, setCheckoutMessage] = useState<string | null>(null);
+  const createOrderMutation = useCreateOrder();
 
   const subtotal = items.reduce((sum, item) => sum + item.quantity * Number(item.price || 0), 0);
   const shipping = subtotal > 50 ? 0 : 9.99;
   const total = subtotal + shipping;
   const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleCheckout = async () => {
+    setIsCheckingOut(true);
+    setCheckoutMessage(null);
+
+    try {
+      // Prepare order items from current cart state
+      const orderItems = items.map((item) => ({
+        id: item.id,
+        productId: String(item.id),
+        title: item.title,
+        price: item.price,
+        quantity: item.quantity,
+        thumbnail: item.thumbnail || "",
+      }));
+
+      const totalAmount = items.reduce(
+        (sum, item) => sum + Number(item.price) * item.quantity,
+        0
+      );
+
+      await createOrderMutation.mutateAsync({
+        items: orderItems,
+        totalAmount,
+      });
+
+      setCheckoutMessage(`Order created successfully! Total: $${totalAmount.toFixed(2)}`);
+
+      // Clear local cart after successful order
+      await clearCart();
+    } catch (err: any) {
+      const errorMsg = err?.response?.data?.message || err?.message || "Failed to create order. Please try again.";
+      setCheckoutMessage(errorMsg);
+    } finally {
+      setIsCheckingOut(false);
+    }
+  };
+
+  const handleRemoveItem = async (id: number) => {
+    try {
+      await removeItem(id);
+    } catch (err) {
+      console.warn("Failed to remove item", err);
+    }
+  };
+
+  const handleUpdateQuantity = async (id: number, qty: number) => {
+    try {
+      await updateQuantity(id, qty);
+    } catch (err) {
+      console.warn("Failed to update quantity", err);
+    }
+  };
+
+  const handleClearCart = async () => {
+    try {
+      await clearCart();
+    } catch (err) {
+      console.warn("Failed to clear cart", err);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -30,6 +96,18 @@ export default function CartPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+        {checkoutMessage && (
+          <div className={`mb-6 p-4 border text-sm font-bold ${
+            checkoutMessage.includes("successfully")
+              ? "bg-green-50 border-green-200 text-green-700"
+              : "bg-red-50 border-red-200 text-red-700"
+          }`}>
+            {checkoutMessage === "Cart is empty. Please add items to your cart before checkout." 
+              ? "Cart is empty. Please add items to your cart before checkout." 
+              : checkoutMessage}
+          </div>
+        )}
+
         {items.length === 0 ? (
           <div className="text-center py-24">
             <div className="mx-auto mb-6 inline-flex h-20 w-20 items-center justify-center bg-black text-[#ccff00]">
@@ -71,7 +149,7 @@ export default function CartPage() {
                       <p className="text-xs text-gray-400 font-bold uppercase tracking-widest mb-1">{item.category || "Product"}</p>
                       <h2 className="font-bold text-gray-900 text-sm line-clamp-2">{item.title}</h2>
                       <button
-                        onClick={() => removeItem(item.id)}
+                        onClick={() => handleRemoveItem(item.id)}
                         className="mt-2 text-xs text-red-500 hover:text-red-700 font-bold uppercase tracking-wider"
                       >
                         Remove
@@ -82,14 +160,14 @@ export default function CartPage() {
                   {/* Quantity */}
                   <div className="flex items-center justify-center gap-2 border border-gray-200 bg-gray-50 w-fit mx-auto">
                     <button
-                      onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                      onClick={() => handleUpdateQuantity(item.id, item.quantity - 1)}
                       className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-black hover:text-white transition-colors"
                     >
                       <Minus size={14} />
                     </button>
                     <span className="w-8 text-center font-black text-sm">{item.quantity}</span>
                     <button
-                      onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                      onClick={() => handleUpdateQuantity(item.id, item.quantity + 1)}
                       className="w-9 h-9 flex items-center justify-center text-gray-600 hover:bg-black hover:text-white transition-colors"
                     >
                       <Plus size={14} />
@@ -109,7 +187,7 @@ export default function CartPage() {
               {/* Clear Cart */}
               <div className="flex justify-end">
                 <button
-                  onClick={clearCart}
+                  onClick={handleClearCart}
                   className="flex items-center gap-2 text-xs font-bold uppercase tracking-widest text-red-500 hover:text-red-700 transition-colors"
                 >
                   <X size={14} /> Clear Cart
@@ -143,9 +221,11 @@ export default function CartPage() {
 
               <button
                 type="button"
-                className="w-full bg-black text-[#ccff00] py-4 text-sm font-black uppercase tracking-widest hover:bg-gray-900 transition-colors mb-4"
+                onClick={handleCheckout}
+                disabled={isCheckingOut}
+                className="w-full bg-black text-[#ccff00] py-4 text-sm font-black uppercase tracking-widest hover:bg-gray-900 transition-colors mb-4 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                Proceed to Checkout
+                {isCheckingOut ? "Processing..." : "Checkout"}
               </button>
 
               <Link

@@ -1,7 +1,7 @@
 import api from "../lib/axios";
 
 export type WishlistItem = {
-  id: string;
+  id: number;
   productId: string;
   title?: string;
   price: number;
@@ -11,8 +11,7 @@ export type WishlistItem = {
 };
 
 export type WishlistResponse = {
-  items: WishlistItem[];
-  count: number;
+  products: WishlistItem[];
 };
 
 export const getWishlist = async (): Promise<WishlistResponse> => {

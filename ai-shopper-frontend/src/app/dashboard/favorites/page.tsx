@@ -1,33 +1,61 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { Heart, ShoppingCart, Star, Trash2, HeartOff, ShoppingBag, ArrowLeft } from "lucide-react";
 import useWishlist from "../../../store/useWishlist";
 import useCart from "../../../store/useCart";
-import { useState } from "react";
 
 export default function FavoritesPage() {
   const { items, removeItem, clearWishlist } = useWishlist();
   const addItem = useCart((s: any) => s.addItem);
-  const [addedIds, setAddedIds] = useState<Set<number>>(new Set());
+  const [addedIds, setAddedIds] = useState<Set<number>>(new Set([0]));
+  const [isClearing, setIsClearing] = useState(false);
 
-  const handleAddToCart = (product: any) => {
-    addItem({
-      id: product.id,
-      title: product.title,
-      price: product.price,
-      thumbnail: product.thumbnail,
-      category: product.category,
-    }, 1);
-    setAddedIds((prev) => new Set(prev).add(product.id));
-    setTimeout(() => {
-      setAddedIds((prev) => {
-        const next = new Set(prev);
-        next.delete(product.id);
-        return next;
-      });
-    }, 1500);
+  // Initialize addedIds with a dummy value so initial render works
+  const [initialized, setInitialized] = useState(false);
+
+  const handleAddToCart = async (product: any) => {
+    try {
+      await addItem({
+        id: product.id,
+        title: product.title,
+        price: product.price,
+        thumbnail: product.thumbnail,
+        category: product.category,
+      }, 1);
+      setAddedIds((prev) => new Set(prev).add(product.id));
+      setTimeout(() => {
+        setAddedIds((prev) => {
+          const next = new Set(prev);
+          next.delete(product.id);
+          return next;
+        });
+      }, 1500);
+    } catch (err) {
+      console.warn("Failed to add to cart", err);
+    }
+  };
+
+  const handleRemoveItem = async (id: number) => {
+    try {
+      await removeItem(id);
+    } catch (err) {
+      console.warn("Failed to remove item", err);
+    }
+  };
+
+  const handleClearWishlist = async () => {
+    if (isClearing) return;
+    setIsClearing(true);
+    try {
+      await clearWishlist();
+    } catch (err) {
+      console.warn("Failed to clear wishlist", err);
+    } finally {
+      setIsClearing(false);
+    }
   };
 
   return (
@@ -48,10 +76,11 @@ export default function FavoritesPage() {
             </div>
             {items.length > 0 && (
               <button
-                onClick={clearWishlist}
-                className="flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border border-gray-600 text-gray-300 hover:border-white hover:text-white transition-colors"
+                onClick={handleClearWishlist}
+                disabled={isClearing}
+                className="flex items-center gap-2 px-5 py-3 text-xs font-black uppercase tracking-wider border border-gray-600 text-gray-300 hover:border-white hover:text-white transition-colors disabled:opacity-50"
               >
-                <Trash2 size={14} /> Clear All
+                <Trash2 size={14} /> {isClearing ? "Clearing..." : "Clear All"}
               </button>
             )}
           </div>
@@ -93,7 +122,7 @@ export default function FavoritesPage() {
                     />
                     {/* Remove button */}
                     <button
-                      onClick={(e) => { e.preventDefault(); removeItem(product.id); }}
+                      onClick={(e) => { e.preventDefault(); handleRemoveItem(product.id); }}
                       className="absolute top-3 right-3 bg-white p-2 text-black hover:bg-black hover:text-[#ccff00] transition-colors shadow-sm"
                       title="Remove from favourites"
                     >
@@ -150,7 +179,7 @@ export default function FavoritesPage() {
                   <div className="flex items-center justify-between mt-2">
                     <p className="text-lg font-black text-gray-900">${Number(product.price).toFixed(2)}</p>
                     <button
-                      onClick={() => removeItem(product.id)}
+                      onClick={() => handleRemoveItem(product.id)}
                       className="text-xs text-gray-400 hover:text-red-500 font-bold uppercase tracking-wider transition-colors"
                     >
                       Remove

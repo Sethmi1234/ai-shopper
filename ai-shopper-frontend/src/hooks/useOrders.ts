@@ -4,8 +4,10 @@ import {
   getOrders,
   getOrderById,
   cancelOrder,
-  CreateOrderInput,
+  CreateOrderResponse,
+  OrdersResponse,
   Order,
+  OrderItem,
 } from "../services/order.service";
 
 export const useOrders = () => {
@@ -27,7 +29,8 @@ export const useCreateOrder = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: createOrder,
+    mutationFn: ({ items, totalAmount }: { items: OrderItem[]; totalAmount: number }) =>
+      createOrder(items, totalAmount),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
       queryClient.invalidateQueries({ queryKey: ["cart"] });

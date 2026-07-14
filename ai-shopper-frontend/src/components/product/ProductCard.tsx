@@ -3,6 +3,7 @@
 import { Heart, ShoppingBag, Sparkles, Star, TrendingUp } from "lucide-react";
 import Image from "next/image";
 import useWishlist from "../../store/useWishlist";
+import useCart from "../../store/useCart";
 
 type ProductCardProps = {
   title: string;
@@ -17,20 +18,43 @@ type ProductCardProps = {
 
 export default function ProductCard({ title, category, price, rating, reviews, img, badgeType, id }: ProductCardProps) {
   const { toggleItem, isWishlisted } = useWishlist();
+  const addItem = useCart((s) => s.addItem);
   const wishlisted = id ? isWishlisted(id) : false;
 
-  const handleWishlistToggle = (e: React.MouseEvent) => {
+  const handleWishlistToggle = async (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
     if (id) {
-      toggleItem({
-        id,
-        title,
-        price: Number(price.replace(/[^0-9.]/g, "")),
-        thumbnail: img,
-        category,
-        rating,
-      });
+      try {
+        await toggleItem({
+          id,
+          title,
+          price: Number(price.replace(/[^0-9.]/g, "")),
+          thumbnail: img,
+          category,
+          rating,
+        });
+      } catch (err) {
+        console.warn("Failed to toggle wishlist", err);
+      }
+    }
+  };
+
+  const handleAddToCart = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (id) {
+      try {
+        await addItem({
+          id,
+          title,
+          price: Number(price.replace(/[^0-9.]/g, "")),
+          thumbnail: img,
+          category,
+        }, 1);
+      } catch (err) {
+        console.warn("Failed to add to cart", err);
+      }
     }
   };
 
@@ -63,7 +87,10 @@ export default function ProductCard({ title, category, price, rating, reviews, i
 
         {/* Hover Actions */}
         <div className="absolute bottom-0 left-0 w-full p-4 flex gap-2 translate-y-full group-hover:translate-y-0 transition-transform duration-300 z-10 bg-gradient-to-t from-black/50 to-transparent">
-          <button className="flex-1 bg-white hover:bg-black hover:text-white text-black py-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2">
+          <button
+            onClick={handleAddToCart}
+            className="flex-1 bg-white hover:bg-black hover:text-white text-black py-3 text-xs font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-2"
+          >
             <ShoppingBag size={14} /> Add to Cart
           </button>
         </div>

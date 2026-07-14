@@ -1,6 +1,6 @@
-import api from "../lib/axios";
+import dummyApi from "../lib/dummyApi";
 
 export const getProductsByCategory = async (slug: string) => {
-  const res = await api.get(`/products/category/${slug}`);
+  const res = await dummyApi.get(`/products/category/${slug}`);
   return res.data;
 };
