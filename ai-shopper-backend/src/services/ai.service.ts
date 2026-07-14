@@ -23,6 +23,8 @@ interface AIResponse {
   matches?: Array<{ id: number; score: number; reason: string }>;
   error?: string;
   success?: boolean;
+  fallback?: boolean;
+  products?: any[];
 }
 
 /**
