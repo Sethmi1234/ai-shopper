@@ -6,23 +6,24 @@ import Link from "next/link";
 import { useCategories } from "../../../hooks/useCategories";
 
 const staticCategories = [
-  { name: "Beauty", slug: "beauty", img: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=400&h=400" },
-  { name: "Fragrances", slug: "fragrances", img: "https://images.unsplash.com/photo-1588776814546-1ffbb3c29edf?auto=format&fit=crop&q=80&w=400&h=400" },
+  { name: "Beauty", slug: "beauty", img: "https://images.unsplash.com/photo-1596462502278-27bfdc403348?auto=format&fit=crop&q=80&w=400&h=400" },
+  { name: "Fragrances", slug: "fragrances", img: "https://images.unsplash.com/photo-1541643600914-78b084683601?auto=format&fit=crop&q=80&w=400&h=400" },
   { name: "Furniture", slug: "furniture", img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=400&h=400" },
-  { name: "Accessories", slug: "womens-bags", img: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=400&h=400" },
+  { name: "Accessories", slug: "womens-bags", img: "https://images.unsplash.com/photo-1566150905458-1bf1fc113f0d?auto=format&fit=crop&q=80&w=400&h=400" },
+  { name: "Home Decoration", slug: "home-decoration", img: "https://images.unsplash.com/photo-1616486338812-3d6dc9e7c3b3?auto=format&fit=crop&q=80&w=400&h=400" },
+  { name: "Mens Shirts", slug: "mens-shirts", img: "https://images.unsplash.com/photo-1596755094514-f87e34085b2c?auto=format&fit=crop&q=80&w=400&h=400" },
   { name: "Electronics", slug: "laptops", img: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=400&h=400" },
-  { name: "Apparel", slug: "mens-shirts", img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=400&h=400" },
 ];
 
 const extraUnsplashIds = [
-  "1505740420928-5e560c06d30e",
-  "1523275335684-37898b6baf30",
-  "1542291026-7eec264c27ff",
-  "1611186871348-b1ce696e52c9",
-  "1583394838236-0c1598ce405c",
-  "1491553895911-0055eca6402d",
-  "1560769629-975ec94e6a86",
-  "1526170375885-74d8484da3d9",
+  "1522335789203-aabd1fc54bc9", // beauty
+  "1541643600914-78b084683601", // fragrances
+  "1555041469-a586c61ea9bc",   // furniture
+  "1566150905458-1bf1fc113f0d", // accessories
+  "1498050108023-c5249f4df085", // electronics
+  "1523381210434-271e8be1f52b", // apparel
+  "1505740420928-5e560c06d30e", // sports
+  "1616486338812-3d6dc9e7c3b3", // home decoration
 ];
 
 export default function CategoryListingPage() {
@@ -92,6 +93,7 @@ export default function CategoryListingPage() {
                     fill
                     sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 16vw"
                     className="object-cover group-hover:scale-110 transition-transform duration-500"
+                    unoptimized
                   />
                   <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors duration-300" />
                 </div>

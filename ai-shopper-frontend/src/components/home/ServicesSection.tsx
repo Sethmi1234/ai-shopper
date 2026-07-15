@@ -73,7 +73,7 @@ export default function ServicesSection() {
         {/* Header */}
         <div className="text-center mb-16">
           <p className="text-xs font-bold uppercase tracking-[0.3em] text-gray-400 mb-4">What We Offer</p>
-          <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-4" style={{ color: 'red' }}>
+          <h2 className="text-3xl md:text-5xl font-black uppercase tracking-tighter mb-4" style={{ color: 'black' }}>
             Premium Services
           </h2>
           <p className="text-gray-500 max-w-2xl mx-auto text-sm md:text-base">
@@ -103,7 +103,7 @@ export default function ServicesSection() {
                 {service.icon}
               </div>
               <h3 className="font-bold text-lg mb-3 uppercase tracking-wider transition-colors duration-300 group-hover:text-red-300" 
-                  style={{ color: i < 3 ? 'red' : 'black' }}>
+                  style={{ color: i < 3 ? 'gray' : 'gray' }}>
                 {service.title}
               </h3>
               <p className="text-sm leading-relaxed text-gray-500 group-hover:text-gray-300 transition-colors duration-300">

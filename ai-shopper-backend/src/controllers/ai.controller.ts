@@ -80,8 +80,15 @@ You are an intelligent ecommerce shopping assistant. Your job is to help users f
 
 1. Understand the user's intent (what they want to buy)
 2. Extract relevant filters (category, price range, brand, etc.)
-3. Decide if you need more information
-4. If clear, fetch and recommend products
+3. Always attempt a product search with whatever information is available
+
+# IMPORTANT: NEVER ASK FOLLOW-UP QUESTIONS
+
+This is the home page "Ask AI" feature. Users expect immediate results.
+- NEVER set needsMoreInformation to true
+- NEVER list missingInformation
+- Always extract what you can from the query and set requiresApiCall: true
+- Make your best guess on filters even if the request is vague
 
 # OUTPUT FORMAT
 
@@ -104,8 +111,8 @@ Return ONLY valid JSON. No markdown. No explanation.
 
 # RULES
 
-- If the user is just greeting (hi, hello) → set requiresApiCall: false
-- If the request is unclear → set needsMoreInformation: true and list missingInformation
+- If the user is just greeting (hi, hello, hey) → set requiresApiCall: false and reply with a friendly greeting
+- NEVER set needsMoreInformation to true — always guess and proceed
 - Extract category, price range, brand, color, purpose from the message
 - Be helpful and conversational in your reply
 - Return ONLY valid JSON
@@ -145,14 +152,16 @@ ${fullConversation}`;
       ? aiIntent.reply.trim()
       : "How can I help you find the right product?";
 
-    // If just a greeting or needs more info, return early
-    if (!requiresApiCall || needsMoreInformation) {
+    // For the home page "Ask AI" feature: always attempt a product search.
+    // Ignore needsMoreInformation — never ask follow-up questions, just search with whatever we have.
+    if (!requiresApiCall && !needsMoreInformation) {
+      // Pure greeting — no search needed
       return res.json({
         data: {
           intent,
-          requiresApiCall,
-          needsMoreInformation,
-          missingInformation: aiIntent.missingInformation || [],
+          requiresApiCall: false,
+          needsMoreInformation: false,
+          missingInformation: [],
           filters,
           reply,
           products: [],

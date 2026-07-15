@@ -1,175 +1,87 @@
-# 🛍️ AI Shop — Smart Shopping Powered by AI
+# 🛍️ AI Shopper — AI-Powered E-Commerce Platform
 
 <div align="center">
   <br />
-  <img src="https://img.shields.io/badge/Next.js-14.2.5-black?style=for-the-badge&logo=next.js" alt="Next.js" />
-  <img src="https://img.shields.io/badge/TypeScript-5.x-3178C6?style=for-the-badge&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/Next.js-15-black?style=for-the-badge&logo=next.js" alt="Next.js" />
+  <img src="https://img.shields.io/badge/Express-5-000000?style=for-the-badge&logo=express" alt="Express" />
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?style=for-the-badge&logo=typescript" alt="TypeScript" />
+  <img src="https://img.shields.io/badge/MongoDB-47A248?style=for-the-badge&logo=mongodb" alt="MongoDB" />
   <img src="https://img.shields.io/badge/Tailwind_CSS-4-06B6D4?style=for-the-badge&logo=tailwind-css" alt="Tailwind CSS" />
   <img src="https://img.shields.io/badge/Zustand-5-433E38?style=for-the-badge" alt="Zustand" />
   <img src="https://img.shields.io/badge/React_Query-5-FF4154?style=for-the-badge&logo=react-query" alt="React Query" />
   <br /><br />
 </div>
 
-**AI Shop** is a modern, AI-powered e-commerce platform built with Next.js 14. It features intelligent product recommendations, a smart chatbot assistant, real-time search, and a sleek black & lime green (`#ccff00`) design.
+**AI Shopper** is a full-stack AI-powered e-commerce platform with a Next.js 14 frontend and an Express.js backend. It features intelligent product recommendations, a smart chatbot assistant, NVIDIA AI-powered product search, user authentication (JWT), and a persistent shopping cart & wishlist backed by MongoDB.
+
+---
+
+## 📋 Table of Contents
+
+- [Features](#-features)
+- [Tech Stack](#-tech-stack)
+- [Project Structure](#-project-structure)
+- [Getting Started — Frontend](#-getting-started--frontend)
+- [Getting Started — Backend](#-getting-started--backend)
+- [Environment Variables](#-environment-variables)
+- [API Endpoints](#-api-endpoints)
+- [Demo Credentials](#-demo-credentials)
+- [Changes from Original](#-changes-from-original)
 
 ---
 
 ## ✨ Features
 
 ### 🧠 AI-Powered Shopping
-- **AI Chatbot** — Floating chat assistant that answers product questions using NVIDIA's Llama 3.3 API with smart fallback responses
-- **AI Product Search** — Natural language search that extracts intent (category, price, keywords) via AI and queries the product catalog
-- **AI Recommendations** — Personalized product suggestions based on user input
+- **AI Chatbot** — Floating chat assistant that classifies user intent via NVIDIA Mistral Large 3, fetches products from DummyJSON, and returns filtered results with add-to-cart / wishlist support
+- **"Ask AI" Home Search** — Natural language search bar on the homepage that extracts intent (category, price, brand, etc.) via AI and returns direct product results (no follow-up questions)
+- **AI Smart Recommendations** — `POST /ai/smart-recommend` endpoint provides product recommendations with clarification support (asks follow-up questions when ambiguous)
 
-### 🛒 Full E-Commerce
-- **Product Catalog** — Browse with category filters, price range, rating filter, and sorting
-- **Product Details** — Individual product pages with images, descriptions, reviews, and ratings
-- **Shopping Cart** — Add/remove items, update quantities, persisted via Zustand + localStorage
-- **Wishlist** — Save favorite products with heart toggle, persisted across sessions
-- **Search** — Keyword search across the entire product catalog
+### 🛒 Full E-Commerce Backend
+- **User Authentication** — Register, login, JWT access + refresh tokens, protected routes
+- **Shopping Cart** — Full CRUD (add, update quantity, remove, clear) persisted in MongoDB
+- **Wishlist** — Full CRUD persisted in MongoDB
+- **Orders** — Create and view order history
 
 ### 🎨 Modern UI/UX
-- **Black & Lime Green Theme** — Bold, high-contrast design with `#ccff00` accent
-- **Animated Hero** — Rotating tagline words ("Be Smart.", "Be Bold.", "Be Swift.", etc.)
-- **Responsive Design** — Fully mobile-optimized with hamburger menu
-- **Smooth Animations** — Fade-in, slide-up, hover effects throughout
-- **Sticky Navigation** — Persistent header with cart/wishlist badges
-
-### 📄 Content Sections
-- **Services** — 6 premium services with expandable feature lists and stats
-- **About Us** — Company story, timeline, values, and leadership team
-- **Blog** — 6 blog posts with featured/recent layout and newsletter CTA
-
-### 🔐 Authentication
-- **Login Page** — Styled to match the site theme with demo credentials
-- **Auth Guard** — Protected dashboard routes
-- **Token Refresh** — Automatic access token refresh via axios interceptors
+- Black & Lime Green (`#ccff00`) theme
+- Animated hero with rotating taglines
+- Fully responsive, mobile-optimized
+- Smooth animations throughout
+- Sticky navbar with cart/wishlist badges
 
 ---
 
 ## 🚀 Tech Stack
 
+### Frontend
 | Technology | Purpose |
 |------------|---------|
-| **Next.js 14.2** (App Router) | React framework with SSR/SSG |
+| **Next.js 14** (App Router) | React framework with SSR |
 | **TypeScript** | Type safety |
 | **Tailwind CSS 4** | Utility-first styling |
-| **Zustand 5** | State management (cart, wishlist) |
-| **TanStack React Query 5** | Server state & caching |
-| **Axios** | HTTP client with interceptors |
-| **NVIDIA Mistral Large 3 API** | AI chat & product search |
-| **Express.js Backend** | Custom API (cart, wishlist, orders, auth) |
-| **DummyJSON API** | Fallback product data source |
+| **Zustand 5** | Client-side state (cart, wishlist) with localStorage persistence |
+| **TanStack React Query 5** | Server state caching |
+| **Axios** | HTTP client with JWT interceptors |
 | **Lucide React** | Icon library |
 
----
+### Backend
+| Technology | Purpose |
+|------------|---------|
+| **Express.js 5** | REST API framework |
+| **MongoDB + Mongoose** | Database |
+| **MongoDB Memory Server** | In-memory DB for tests |
+| **JWT (jsonwebtoken)** | Authentication tokens |
+| **bcrypt** | Password hashing |
+| **OpenAI SDK** | NVIDIA NIM API integration |
+| **Zod** | Input validation |
+| **express-rate-limit** | Rate limiting |
 
-## 📦 Getting Started
-
-### Prerequisites
-- Node.js 18+ 
-- npm, yarn, or pnpm
-
-### Installation
-
-```bash
-# Clone the repository
-git clone <your-repo-url>
-cd ai-shopper
-
-# Install dependencies
-npm install
-
-# Set up environment variables
-cp .env.example .env
-```
-
-### Environment Variables
-
-Create a `.env` file in the root directory:
-
-```env
-# Backend API URL (for custom backend integration)
-NEXT_PUBLIC_API_URL=http://localhost:5000
-
-# Fallback to DummyJSON if no backend is available
-NEXT_PUBLIC_BASE_URL=https://dummyjson.com
-NVIDIA_API_KEY=nvapi-your-key-here
-NVIDIA_MODEL=mistralai/mistral-large-3-675b-instruct-2512
-NVIDIA_BUILD_URL=https://integrate.api.nvidia.com/v1
-```
-
-> **Note:** The NVIDIA API key is optional. Without it, the chatbot and AI search will fall back to keyword-based matching.
-
-### Backend Integration
-
-This frontend is designed to work with a custom Express.js backend. To connect your backend:
-
-1. **Set Backend URL:**
-   ```env
-   NEXT_PUBLIC_API_URL=http://localhost:5000
-   ```
-
-2. **Backend API Endpoints:**
-   - `POST /auth/login` - User authentication
-   - `POST /auth/refresh` - Token refresh
-   - `GET /auth/me` - Get current user
-   - `GET /cart` - Get cart items
-   - `POST /cart/items` - Add item to cart
-   - `PATCH /cart/items/:id` - Update cart item
-   - `DELETE /cart/items/:id` - Remove cart item
-   - `DELETE /cart` - Clear cart
-   - `GET /wishlist` - Get wishlist items
-   - `POST /wishlist/items` - Add to wishlist
-   - `DELETE /wishlist/items/:id` - Remove from wishlist
-   - `POST /orders` - Create order
-   - `GET /orders` - Get user orders
-   - `GET /orders/:id` - Get order by ID
-
-3. **Authentication:**
-   - The frontend uses JWT tokens (accessToken/refreshToken)
-   - Tokens are stored in localStorage
-   - Axios interceptors handle automatic token refresh on 401 errors
-
-4. **React Query Integration:**
-   - Cart: Use hooks from `@/hooks/useCart`
-   - Wishlist: Use hooks from `@/hooks/useWishlist`
-   - Orders: Use hooks from `@/hooks/useOrders`
-
-**Without Backend:**
-If no backend is running, the frontend will fall back to DummyJSON for product data only. Cart and wishlist will use localStorage stubs with deprecation warnings.
-
-### Run Development Server
-
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
-
-Open [http://localhost:3000](http://localhost:3000) in your browser.
-
-### Build for Production
-
-```bash
-npm run build
-npm start
-```
-
----
-
-## 🧪 Demo Credentials
-
-| Field | Value |
-|-------|-------|
-| **Username** | `emilys` |
-| **Password** | `emilyspass` |
-
-These credentials work with the DummyJSON authentication API.
+### External APIs
+| API | Purpose |
+|-----|---------|
+| **NVIDIA NIM (Mistral Large 3)** | AI intent classification, product filtering, recommendations |
+| **DummyJSON** | Product catalog data source (20+ categories, 200+ products) |
 
 ---
 
@@ -177,93 +89,213 @@ These credentials work with the DummyJSON authentication API.
 
 ```
 ai-shopper/
-├── public/                    # Static assets
-├── src/
-│   ├── app/
-│   │   ├── api/ai/recommend/  # NVIDIA AI API route
-│   │   ├── dashboard/         # Protected pages
-│   │   │   ├── cart/          # Shopping cart
-│   │   │   ├── category/      # Category listing
-│   │   │   ├── favorites/     # Wishlist
-│   │   │   ├── products/      # Product catalog & details
-│   │   │   ├── profile/       # User profile
-│   │   │   └── page.tsx       # Home/dashboard
-│   │   ├── login/             # Login page
-│   │   ├── layout.tsx         # Root layout
-│   │   └── page.tsx           # Landing page
-│   ├── components/
-│   │   ├── ai/                # ChatBot, AiRecommend
-│   │   ├── auth/              # AuthGuard
-│   │   ├── cart/              # Cart components
-│   │   ├── home/              # Hero, Services, About, Blog, etc.
-│   │   ├── layout/            # Navbar, Footer
-│   │   └── product/           # ProductCard
-│   ├── hooks/                 # Custom React hooks
-│   │   └── mutations/         # Auth mutations
-│   ├── lib/                   # Axios config
-│   ├── providers/             # React Query, Auth providers
-│   ├── services/              # API service functions
-│   └── store/                 # Zustand stores (cart, wishlist)
-├── .env                       # Environment variables
-├── next.config.mjs            # Next.js configuration
-├── tailwind.config.ts         # Tailwind configuration
-└── tsconfig.json              # TypeScript configuration
+├── ai-shopper-frontend/          # Next.js 14 frontend
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── dashboard/        # Protected pages (cart, category, favorites, products, profile)
+│   │   │   ├── login/            # Login page
+│   │   │   └── page.tsx          # Landing page
+│   │   ├── components/
+│   │   │   ├── ai/               # ChatBot, AiRecommend
+│   │   │   ├── home/             # AISearch, CategoryGrid, Hero, Services, etc.
+│   │   │   ├── layout/           # Navbar, Footer
+│   │   │   └── product/          # ProductCard
+│   │   ├── hooks/                # Custom React hooks (useCart, useWishlist, useProducts, etc.)
+│   │   ├── lib/                  # Axios instance with JWT interceptors
+│   │   ├── services/             # API service functions
+│   │   └── store/                # Zustand stores (cart, wishlist)
+│   ├── next.config.mjs           # Rewrites /api/* → backend
+│   └── .env.local                # Frontend environment variables
+│
+├── ai-shopper-backend/           # Express.js backend
+│   ├── src/
+│   │   ├── config/               # DB connection, AI client config
+│   │   ├── controllers/          # Route handlers (auth, cart, wishlist, orders, ai)
+│   │   ├── lib/                  # Category list, helpers
+│   │   ├── middleware/           # Auth guard (JWT verify), rate limiter
+│   │   ├── models/               # Mongoose schemas (User, Cart, Wishlist, Order)
+│   │   ├── routes/               # Express routers
+│   │   ├── services/             # AI service (NVIDIA calls), business logic
+│   │   ├── utils/                # Utility functions
+│   │   └── validators/           # Zod schemas
+│   └── .env                      # Backend environment variables
+│
+└── README.md
 ```
 
 ---
 
-## 🎨 Design System
+## 📦 Getting Started — Frontend
 
-| Element | Value |
-|---------|-------|
-| **Primary Background** | `#000000` (Black) |
-| **Accent Color** | `#ccff00` (Lime Green) |
-| **Text** | White / Gray-900 |
-| **Typography** | Inter, bold uppercase with tight tracking |
-| **Border Radius** | Mostly squared (`rounded-none`) for bold look |
-| **Animations** | Fade-in-up, slide-up, scale on hover |
+### Prerequisites
+- Node.js 18+
+- npm, yarn, or pnpm
 
----
+### Installation & Setup
 
-## 🔌 API Integration
+```bash
+# Navigate to frontend
+cd ai-shopper/ai-shopper-frontend
 
-### DummyJSON (Product Data)
-- `GET /products` — List products
-- `GET /products/:id` — Product details
-- `GET /products/categories` — Category list
-- `GET /products/category/:slug` — Products by category
-- `GET /products/search?q=...` — Search products
-- `POST /auth/login` — User authentication
+# Install dependencies
+npm install
 
-### NVIDIA AI (Optional)
-- `POST /api/ai/recommend` — Proxy to NVIDIA's Mistral Large 3 API for AI-powered chat and search
-- **Architecture**: System prompt built on backend, never exposed to frontend
-- **Structured Output**: AI always returns JSON for deterministic frontend behavior
+# Set up environment variables (see section below)
+# Create .env.local in ai-shopper-frontend/
+```
 
----
+### Run Development Server
 
-## 🤝 Contributing
+```bash
+npm run dev
+```
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+> **Note:** The frontend will run without the backend for browsing products (it fetches from DummyJSON directly). For cart, wishlist, authentication, and AI features, the backend must be running.
 
 ---
 
-## 📄 License
+## 📦 Getting Started — Backend
 
-This project is for educational/demonstration purposes.
+### Prerequisites
+- Node.js 18+
+- MongoDB instance (local or Atlas)
+
+### Installation & Setup
+
+```bash
+# Navigate to backend
+cd ai-shopper/ai-shopper-backend
+
+# Install dependencies
+npm install
+
+# Create .env file (see environment variables section)
+```
+
+### Run Development Server
+
+```bash
+npm run dev
+```
+
+The backend starts on **http://localhost:5000**.
+
+### Run Tests
+
+```bash
+npm test
+```
 
 ---
 
-<div align="center">
-  <p>Built with ❤️ using Next.js, TypeScript, and AI</p>
-  <p>
-    <a href="https://nextjs.org" target="_blank">Next.js</a> •
-    <a href="https://tailwindcss.com" target="_blank">Tailwind CSS</a> •
-    <a href="https://zustand-demo.pmnd.rs" target="_blank">Zustand</a> •
-    <a href="https://tanstack.com/query" target="_blank">React Query</a>
-  </p>
-</div>
+## 🔑 Environment Variables
+
+### Frontend (`ai-shopper-frontend/.env.local`)
+
+```env
+# Backend API URL — all /api/* calls are proxied here
+NEXT_PUBLIC_API_URL=http://localhost:5000
+
+# Fallback DummyJSON URL for direct product data fetching
+NEXT_PUBLIC_DUMMYJSON_URL=https://dummyjson.com
+```
+
+> The frontend uses Next.js rewrites (`next.config.mjs`) to proxy `/api/*` requests to the backend at `NEXT_PUBLIC_API_URL`. This eliminates CORS issues during development.
+
+### Backend (`ai-shopper-backend/.env`)
+
+```env
+PORT=5000
+
+# MongoDB connection string
+MONGO_URI=mongodb+srv://<user>:<password>@cluster0.xxxxx.mongodb.net/?appName=Cluster0
+
+# JWT secrets
+ACCESS_TOKEN_SECRET=my_access_secret_key
+REFRESH_TOKEN_SECRET=my_refresh_secret_key
+
+# NVIDIA NIM API (for AI features)
+NVIDIA_API_KEY=nvapi-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+NVIDIA_MODEL=mistralai/mistral-large-3-675b-instruct-2512
+NVIDIA_BUILD_URL=https://integrate.api.nvidia.com/v1
+
+# Optional: DummyJSON base URL override (defaults to https://dummyjson.com)
+DUMMYJSON_BASE_URL=https://dummyjson.com
+```
+
+---
+
+## 🌐 API Endpoints
+
+All endpoints are prefixed with their base path as shown below.
+
+### Authentication (`/auth`)
+
+| Method | Path | Auth | Description |
+|--------|------|------|-------------|
+| POST | `/auth/register` | No | Register a new user |
+| POST | `/auth/login` | No | Login, returns access + refresh tokens |
+| POST | `/auth/refresh` | No | Refresh expired access token |
+| GET | `/auth/me` | Yes | Get current user profile |
+
+### Cart (`/cart`) — All require authentication
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/cart` | Get all cart items |
+| POST | `/cart/items` | Add item to cart |
+| PATCH | `/cart/items/:id` | Update cart item quantity |
+| DELETE | `/cart/items/:id` | Remove item from cart |
+| DELETE | `/cart` | Clear entire cart |
+
+### Wishlist (`/wishlist`) — All require authentication
+
+| Method | Path | Description |
+|--------|------|-------------|
+| GET | `/wishlist` | Get all wishlist items |
+| POST | `/wishlist/items` | Add item to wishlist |
+| DELETE | `/wishlist/items/:id` | Remove item from wishlist |
+| DELETE | `/wishlist` | Clear entire wishlist |
+
+### Orders (`/orders`) — All require authentication
+
+| Method | Path | Description |
+|--------|------|-------------|
+| POST | `/orders` | Create a new order |
+| GET | `/orders` | Get user's order history |
+| GET | `/orders/:id` | Get order by ID |
+
+### AI (`/ai`)
+
+| Method | Path | Auth | Rate Limit | Description |
+|--------|------|------|------------|-------------|
+| POST | `/ai/classify` | No | Standard | Classify user message into a product category |
+| POST | `/ai/recommend` | No | Strict | Full AI recommendation pipeline — extracts intent, fetches & filters products. **Direct answers only, no follow-up questions** |
+| POST | `/ai/smart-recommend` | No | Strict | Smart recommendation with **clarification support** — asks follow-up questions when ambiguous |
+| POST | `/ai/filter-products` | Yes | Strict | AI-powered product relevance filtering |
+
+> **Auth vs No Auth for AI routes:**
+> - `/ai/classify`, `/ai/recommend`, and `/ai/smart-recommend` are **public** — they use server-side API keys (NVIDIA) and public data (DummyJSON). No user token needed.
+> - `/ai/filter-products` requires auth because it's designed to be called after product search for personalized filtering.
+
+---
+
+## 🧪 Demo Credentials
+
+| Field | Value |
+|-------|-------|
+| **Name** | `Test User` |
+| **Email** | `test@example.com` |
+| **Password** | `password123` |
+
+Register a new account at `/login` or via `POST /auth/register`.
+
+---
+
+## 📝 Changes from Original
+
+### `CHANGES.md`
+
+See [`CHANGES.md`](./CHANGES.md) for a detailed breakdown of changes made to the original project, including architecture decisions, frontend-backend integration, and bug fixes.

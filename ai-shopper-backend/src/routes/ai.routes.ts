@@ -11,8 +11,8 @@ router.post("/classify", aiRateLimiter, classify);
 // POST /ai/filter-products - Filter products based on AI analysis (auth required)
 router.post("/filter-products", protect, strictAiRateLimiter, filterProducts);
 
-// POST /ai/recommend - Full AI recommendation pipeline (auth required)
-router.post("/recommend", protect, strictAiRateLimiter, recommend);
+// POST /ai/recommend - Full AI recommendation pipeline (no auth required – uses server-side keys & public data)
+router.post("/recommend", strictAiRateLimiter, recommend);
 
 // POST /ai/smart-recommend - Smart recommendation with clarification (no auth required)
 router.post("/smart-recommend", strictAiRateLimiter, smartRecommendHandler);

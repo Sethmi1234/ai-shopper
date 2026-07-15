@@ -2,29 +2,30 @@
 
 import { ArrowRight, ChevronUp, Loader2 } from "lucide-react";
 import Image from "next/image";
+import Link from "next/link";
 import { useState } from "react";
 import { useCategories } from "../../hooks/useCategories";
 
 const INITIAL_VISIBLE = 6;
 
-const staticCategories = [
-  { name: "Beauty",      img: "/cat_beauty.png" },
-  { name: "Fragrances",  img: "/cat_fragrances.png" },
-  { name: "Furniture",   img: "/cat_furniture.png" },
-  { name: "Accessories", img: "/cat_accessories.png" },
-  { name: "Electronics", img: "/cat_electronics.png" },
-  { name: "Apparel",     img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=400&h=400" },
+const staticCategories: { name: string; img: string; slug: string }[] = [
+  { name: "Beauty",      img: "https://images.unsplash.com/photo-1522335789203-aabd1fc54bc9?auto=format&fit=crop&q=80&w=400&h=400", slug: "beauty" },
+  { name: "Fragrances",  img: "https://images.unsplash.com/photo-1588776814546-1ffbb3c29edf?auto=format&fit=crop&q=80&w=400&h=400", slug: "fragrances" },
+  { name: "Furniture",   img: "https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=400&h=400", slug: "furniture" },
+  { name: "Accessories", img: "https://images.unsplash.com/photo-1548036328-c9fa89d128fa?auto=format&fit=crop&q=80&w=400&h=400", slug: "mobile-accessories" },
+  { name: "Electronics", img: "https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&q=80&w=400&h=400", slug: "laptops" },
+  { name: "Apparel",     img: "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&q=80&w=400&h=400", slug: "tops" },
 ];
 
 const extraUnsplashIds = [
-  "1505740420928-5e560c06d30e",
-  "1523275335684-37898b6baf30",
-  "1542291026-7eec264c27ff",
-  "1611186871348-b1ce696e52c9",
-  "1583394838236-0c1598ce405c",
-  "1491553895911-0055eca6402d",
-  "1560769629-975ec94e6a86",
-  "1526170375885-74d8484da3d9",
+  "1522335789203-aabd1fc54bc9", // beauty
+  "1541643600914-78b084683601", // fragrances
+  "1555041469-a586c61ea9bc",   // furniture
+  "1566150905458-1bf1fc113f0d", // accessories
+  "1498050108023-c5249f4df085", // electronics
+  "1523381210434-271e8be1f52b", // apparel
+  "1505740420928-5e560c06d30e", // sports
+  "1616486338812-3d6dc9e7c3b3", // home decoration
 ];
 
 export default function CategoryGrid() {
@@ -42,8 +43,10 @@ export default function CategoryGrid() {
           .split("-")
           .map((w: string) => w.charAt(0).toUpperCase() + w.slice(1))
           .join(" ");
+        const slug = typeof cat === "string" ? cat : cat.slug || raw;
         return {
           name,
+          slug,
           img: `https://images.unsplash.com/photo-${extraUnsplashIds[index % extraUnsplashIds.length]}?auto=format&fit=crop&q=80&w=400&h=400`,
         };
       })
@@ -86,8 +89,9 @@ export default function CategoryGrid() {
       ) : (
         <div className="grid grid-cols-2 min-[400px]:grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-6">
           {visibleCategories.map((c, i) => (
-            <div
+            <Link
               key={`${c.name}-${i}`}
+              href={`/dashboard/category/${c.slug}`}
               className="flex flex-col gap-3 group cursor-pointer"
               style={{ animation: `fadeInUp 0.4s ease ${i * 0.05}s both` }}
             >
@@ -98,13 +102,14 @@ export default function CategoryGrid() {
                   fill
                   sizes="(max-width: 640px) 150px, 200px"
                   className="object-cover group-hover:scale-105 transition-transform duration-500"
+                  unoptimized
                 />
                 <div className="absolute inset-0 bg-black/5 group-hover:bg-transparent transition-colors" />
               </div>
               <p className="text-sm font-bold text-black uppercase tracking-wide group-hover:text-gray-600 transition-colors">
                 {c.name}
               </p>
-            </div>
+            </Link>
           ))}
         </div>
       )}
