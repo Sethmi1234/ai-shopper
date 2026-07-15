@@ -17,8 +17,8 @@ import {
 import Link from "next/link";
 import Image from "next/image";
 
-import { useWishlist as useWishlistQuery, useAddWishlistItem, useRemoveWishlistItem } from "../../hooks/useWishlist";
-import { useCart as useCartQuery, useAddCartItem } from "../../hooks/useCart";
+import useWishlist from "../../store/useWishlist";
+import useCart from "../../store/useCart";
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 type ConversationTurn = {
@@ -70,51 +70,32 @@ export default function ChatBot() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  // React Query hooks for wishlist
-  const { data: wishlistData } = useWishlistQuery();
-  const addWishlistMutation = useAddWishlistItem();
-  const removeWishlistMutation = useRemoveWishlistItem();
-  
-  // React Query hooks for cart
-  const addCartMutation = useAddCartItem();
+  // Zustand stores for wishlist & cart (works without auth — stores locally)
+  const { toggleItem: wishlistToggle, isWishlisted, items: wishlistItems } = useWishlist();
+  const { addItem: cartAddItem } = useCart();
   
   // Helper functions
-  const isWishlisted = (id: number) => {
-    const items = wishlistData?.products || (wishlistData as any)?.items || [];
-    return items.some((item: any) => item.productId === String(id)) || false;
-  };
+  const isWishlistedCheck = (id: number) => isWishlisted(id);
   
-  const toggleItem = (item: any) => {
-    const wishlistItem = {
-      productId: String(item.id),
-      title: item.title,
-      price: item.price,
-      thumbnail: item.thumbnail,
-      category: item.category,
-      rating: item.rating,
-    };
-    
-    if (isWishlisted(item.id)) {
-      // Find the wishlist item ID and remove it
-      const items = wishlistData?.products || (wishlistData as any)?.items || [];
-      const existingItem = items.find((i: any) => i.productId === String(item.id));
-      if (existingItem) {
-        removeWishlistMutation.mutate(existingItem.id);
-      }
-    } else {
-      addWishlistMutation.mutate(wishlistItem);
-    }
-  };
-  
-  const addToCart = (item: any) => {
-    addCartMutation.mutate({
-      productId: String(item.id),
-      quantity: 1,
-      price: item.price,
-      title: item.title,
-      thumbnail: item.thumbnail,
-      category: item.category,
+  const handleWishlistToggle = (product: { id: number; title: string; price: number; thumbnail?: string; category?: string; rating?: number }) => {
+    wishlistToggle({
+      id: product.id,
+      title: product.title,
+      price: Number(product.price),
+      thumbnail: product.thumbnail,
+      category: product.category,
+      rating: Number(product.rating),
     });
+  };
+  
+  const handleAddToCart = (product: { id: number; title: string; price: number; thumbnail?: string; category?: string }) => {
+    cartAddItem({
+      id: product.id,
+      title: product.title,
+      price: Number(product.price),
+      thumbnail: product.thumbnail,
+      category: product.category,
+    }, 1);
   };
 
   // Fallback response for general queries
@@ -455,7 +436,7 @@ export default function ChatBot() {
                                       onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        toggleItem({
+                                        handleWishlistToggle({
                                           id: product.id,
                                           title: product.title,
                                           price: Number(product.price),
@@ -480,13 +461,12 @@ export default function ChatBot() {
                                       onClick={(e) => {
                                         e.preventDefault();
                                         e.stopPropagation();
-                                        addToCart({
-                                          productId: String(product.id),
+                                        handleAddToCart({
+                                          id: product.id,
                                           title: product.title,
                                           price: Number(product.price),
                                           thumbnail: product.thumbnail,
                                           category: product.category,
-                                          quantity: 1,
                                         });
                                       }}
                                       className="flex-1 bg-white hover:bg-black hover:text-white text-black py-2 text-[9px] font-bold uppercase tracking-wider transition-colors flex items-center justify-center gap-1.5"

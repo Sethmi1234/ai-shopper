@@ -58,7 +58,13 @@ export const callNvidiaAI = async ({
     
     // Try to parse JSON response
     try {
-      const parsed = JSON.parse(content);
+      // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
+      let cleaned = content.trim();
+      const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+      if (jsonMatch) {
+        cleaned = jsonMatch[1].trim();
+      }
+      const parsed = JSON.parse(cleaned);
       return parsed;
     } catch {
       // If not JSON, return as plain text in reply
