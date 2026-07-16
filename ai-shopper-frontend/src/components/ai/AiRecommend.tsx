@@ -39,7 +39,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
   
   // Helper functions
   const isWishlisted = (id: number) => {
-    return wishlistData?.items?.some((item: any) => item.productId === String(id)) || false;
+    return wishlistData?.products?.some((item: any) => item.productId === String(id)) || false;
   };
   
   const toggleItem = (item: any) => {
@@ -53,9 +53,9 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
     };
     
     if (isWishlisted(item.id)) {
-      const existingItem = wishlistData?.items?.find((i: any) => i.productId === String(item.id));
+      const existingItem = wishlistData?.products?.find((i: any) => i.productId === String(item.id));
       if (existingItem) {
-        removeWishlistMutation.mutate(existingItem.id);
+        removeWishlistMutation.mutate(existingItem.productId);
       }
     } else {
       addWishlistMutation.mutate(wishlistItem);
