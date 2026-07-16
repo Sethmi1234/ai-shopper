@@ -19,13 +19,16 @@ console.log('NVIDIA_API_KEY after load:', process.env.NVIDIA_API_KEY ? 'Found' :
 
 import app from "./app";
 import {connectDB} from "./config/database";
+import {seedDemoUser} from "./config/seed";
 
 
 const PORT = process.env.PORT || 5000;
 
 
 
-connectDB();
+connectDB().then(() => {
+  seedDemoUser();
+});
 
 
 app.listen(PORT,()=>{
