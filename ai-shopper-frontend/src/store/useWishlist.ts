@@ -20,6 +20,7 @@ type WishlistState = {
   isWishlisted: (id: number) => boolean;
   clearWishlist: () => Promise<void>;
   syncFromBackend: () => Promise<void>;
+  pushToBackend: () => Promise<void>;
 };
 
 export const useWishlist = create<WishlistState>()(
@@ -27,6 +28,30 @@ export const useWishlist = create<WishlistState>()(
     (set, get) => ({
       items: [],
       isSyncing: false,
+
+      // Push ALL local items to backend (called after login)
+      pushToBackend: async () => {
+        const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+        if (!token) return;
+        const localItems = get().items;
+        if (localItems.length === 0) return;
+
+        try {
+          // Push each local item to backend
+          for (const item of localItems) {
+            await api.post("/wishlist/items", {
+              productId: String(item.id),
+              title: item.title,
+              price: item.price,
+              thumbnail: item.thumbnail || "",
+            }).catch(() => {});
+          }
+          // Sync from backend to get accurate state
+          await get().syncFromBackend();
+        } catch (err) {
+          console.warn("Failed to push wishlist to backend", err);
+        }
+      },
 
       syncFromBackend: async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
@@ -42,11 +67,10 @@ export const useWishlist = create<WishlistState>()(
             thumbnail: item.thumbnail || "",
           }));
 
-          if (backendItems.length > 0) {
-            set({ items: backendItems });
-          }
+          // Always use backend data as source of truth
+          set({ items: backendItems });
         } catch (err) {
-          console.warn("Failed to sync wishlist from backend, using local state", err);
+          console.warn("Failed to sync wishlist from backend", err);
         } finally {
           set({ isSyncing: false });
         }
@@ -58,28 +82,51 @@ export const useWishlist = create<WishlistState>()(
 
         if (exists) {
           // Remove
+          const previousItems = get().items;
           set((state) => ({ items: state.items.filter((i) => i.id !== item.id) }));
           if (token) {
             try {
               await api.delete(`/wishlist/items/${item.id}`);
+              const res = await api.get("/wishlist");
+              const backendItems: WishlistItem[] = (res.data.products || []).map((bi: any) => ({
+                id: Number(bi.productId),
+                title: bi.title || "",
+                price: bi.price || 0,
+                thumbnail: bi.thumbnail || "",
+              }));
+              set({ items: backendItems });
             } catch (err) {
               console.warn("Failed to remove wishlist item from backend", err);
+              set({ items: previousItems });
+              throw err;
             }
           }
         } else {
           // Add
-          set((state) => ({ items: [...state.items, item] }));
           if (token) {
             try {
-              await api.post("/wishlist/items", {
+              const res = await api.post("/wishlist/items", {
                 productId: String(item.id),
                 title: item.title,
                 price: item.price,
                 thumbnail: item.thumbnail || "",
               });
+              if (res.data && res.data.products) {
+                const backendItems: WishlistItem[] = res.data.products.map((bi: any) => ({
+                  id: Number(bi.productId),
+                  title: bi.title || "",
+                  price: bi.price || 0,
+                  thumbnail: bi.thumbnail || "",
+                }));
+                set({ items: backendItems });
+              }
             } catch (err) {
               console.warn("Failed to add wishlist item to backend", err);
+              throw err;
             }
+          } else {
+            // Not logged in — update local state only
+            set((state) => ({ items: [...state.items, item] }));
           }
         }
       },
@@ -89,18 +136,29 @@ export const useWishlist = create<WishlistState>()(
         const exists = get().items.find((i) => i.id === item.id);
 
         if (!exists) {
-          set((state) => ({ items: [...state.items, item] }));
           if (token) {
             try {
-              await api.post("/wishlist/items", {
+              const res = await api.post("/wishlist/items", {
                 productId: String(item.id),
                 title: item.title,
                 price: item.price,
                 thumbnail: item.thumbnail || "",
               });
+              if (res.data && res.data.products) {
+                const backendItems: WishlistItem[] = res.data.products.map((bi: any) => ({
+                  id: Number(bi.productId),
+                  title: bi.title || "",
+                  price: bi.price || 0,
+                  thumbnail: bi.thumbnail || "",
+                }));
+                set({ items: backendItems });
+              }
             } catch (err) {
               console.warn("Failed to add wishlist item to backend", err);
+              throw err;
             }
+          } else {
+            set((state) => ({ items: [...state.items, item] }));
           }
         }
       },
@@ -108,14 +166,23 @@ export const useWishlist = create<WishlistState>()(
       removeItem: async (id) => {
         const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
-        set((state) => ({ items: state.items.filter((i) => i.id !== id) }));
-
         if (token) {
           try {
             await api.delete(`/wishlist/items/${id}`);
+            const res = await api.get("/wishlist");
+            const backendItems: WishlistItem[] = (res.data.products || []).map((bi: any) => ({
+              id: Number(bi.productId),
+              title: bi.title || "",
+              price: bi.price || 0,
+              thumbnail: bi.thumbnail || "",
+            }));
+            set({ items: backendItems });
           } catch (err) {
             console.warn("Failed to remove wishlist item from backend", err);
+            throw err;
           }
+        } else {
+          set((state) => ({ items: state.items.filter((i) => i.id !== id) }));
         }
       },
 
@@ -123,19 +190,19 @@ export const useWishlist = create<WishlistState>()(
 
       clearWishlist: async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-        const currentItems = get().items;
-
-        set({ items: [] });
 
         if (token) {
+          const currentItems = get().items;
           for (const item of currentItems) {
             try {
               await api.delete(`/wishlist/items/${item.id}`);
             } catch (err) {
               console.warn("Failed to clear wishlist item from backend", err);
+              throw err;
             }
           }
         }
+        set({ items: [] });
       },
     }),
     {

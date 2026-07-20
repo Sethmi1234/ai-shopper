@@ -29,7 +29,7 @@ services:
       mongodb:
         condition: service_healthy
     environment:
-      MONGO_URI: mongodb://mongodb:27017/ai-shopper
+      MONGO_URI: mongodb+srv://disethmi_db_user:WEh2PMQ9wQMNfREf@cluster0.uhj4mc3.mongodb.net/?appName=Cluster0
       PORT: 5000
       NODE_ENV: production
     env_file:

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
+import { getAuthUser } from "../../services/auth.service";
 
 export default function AuthGuard({ children }: { children: React.ReactNode }) {
   const router = useRouter();
@@ -17,16 +18,24 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       localStorage.removeItem("accessToken");
     }
 
-    console.log("AuthGuard - Token exists:", !!token);
-    console.log("AuthGuard - Token value:", token);
-    
     if (!token) {
-      console.log("AuthGuard - No token found, redirecting to login");
       router.replace("/login");
-    } else {
-      console.log("AuthGuard - Token found, allowing access");
-      setIsAuthenticated(true);
+      return;
     }
+
+    getAuthUser()
+      .then(() => {
+        setIsAuthenticated(true);
+      })
+      .catch(() => {
+        localStorage.removeItem("accessToken");
+        localStorage.removeItem("refreshToken");
+        localStorage.removeItem("authData");
+        localStorage.removeItem("userName");
+        localStorage.removeItem("userEmail");
+        document.cookie = "accessToken=; path=/; max-age=0";
+        router.replace("/login");
+      });
   }, [router]);
 
   // Show loading state while checking authentication

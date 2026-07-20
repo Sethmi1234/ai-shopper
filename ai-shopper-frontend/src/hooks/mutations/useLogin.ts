@@ -38,11 +38,22 @@ export const useLogin = () => {
           // user fetch is optional, don't block login
         });
 
-      // Sync cart and wishlist from backend
+      // FIRST: Push any local items to backend, THEN sync from backend
       try {
-        const { syncFromBackend: syncCart } = useCart.getState();
-        const { syncFromBackend: syncWishlist } = useWishlist.getState();
-        await Promise.all([syncCart(), syncWishlist()]);
+        const cartStore = useCart.getState();
+        const wishlistStore = useWishlist.getState();
+
+        // Push local items to backend
+        await Promise.all([
+          cartStore.pushToBackend(),
+          wishlistStore.pushToBackend(),
+        ]);
+
+        // Then sync from backend to get accurate state
+        await Promise.all([
+          cartStore.syncFromBackend(),
+          wishlistStore.syncFromBackend(),
+        ]);
       } catch (err) {
         console.warn("Failed to sync data from backend after login", err);
       }
