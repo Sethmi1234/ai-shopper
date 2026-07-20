@@ -22,6 +22,7 @@ type CartState = {
   getTotalItems: () => number;
   getTotalPrice: () => number;
   syncFromBackend: () => Promise<void>;
+  pushToBackend: () => Promise<void>;
 };
 
 export const useCart = create<CartState>()(
@@ -29,6 +30,33 @@ export const useCart = create<CartState>()(
     (set, get) => ({
       items: [],
       isSyncing: false,
+
+      // Push ALL local items to backend (called after login)
+      pushToBackend: async () => {
+        const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
+        if (!token) return;
+        const localItems = get().items;
+        if (localItems.length === 0) return;
+
+        try {
+          // First clear the backend cart
+          await api.delete("/cart").catch(() => {});
+          // Then push each local item
+          for (const item of localItems) {
+            await api.post("/cart/items", {
+              productId: String(item.id),
+              title: item.title,
+              price: item.price,
+              quantity: item.quantity,
+              thumbnail: item.thumbnail || "",
+            }).catch(() => {});
+          }
+          // Finally sync from backend to get real _ids
+          await get().syncFromBackend();
+        } catch (err) {
+          console.warn("Failed to push cart to backend", err);
+        }
+      },
 
       syncFromBackend: async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
@@ -46,12 +74,10 @@ export const useCart = create<CartState>()(
             _id: item._id,
           }));
 
-          // Merge backend items with local items (backed items take precedence)
-          if (backendItems.length > 0) {
-            set({ items: backendItems });
-          }
+          // Always use backend data as source of truth
+          set({ items: backendItems });
         } catch (err) {
-          console.warn("Failed to sync cart from backend, using local state", err);
+          console.warn("Failed to sync cart from backend", err);
         } finally {
           set({ isSyncing: false });
         }
@@ -59,46 +85,47 @@ export const useCart = create<CartState>()(
 
       addItem: async (item, quantity = 1) => {
         const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
-        
-        // Optimistically update local state
-        set((state) => {
-          const exists = state.items.find((i) => i.id === item.id);
-          if (exists) {
-            return {
-              items: state.items.map((i) =>
-                i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i
-              ),
-            };
-          }
-          return { items: [...state.items, { ...item, quantity }] };
-        });
 
-        // Sync to backend if authenticated
-        if (token) {
-          try {
-            const res = await api.post("/cart/items", {
-              productId: String(item.id),
-              title: item.title,
-              price: item.price,
-              quantity: quantity,
-              thumbnail: item.thumbnail || "",
-            });
-
-            // Update local items with MongoDB _ids from response
-            if (res.data && res.data.items) {
-              const updatedItems: CartItem[] = res.data.items.map((bi: any) => ({
-                id: Number(bi.productId),
-                title: bi.title || "",
-                price: bi.price || 0,
-                quantity: bi.quantity || 1,
-                thumbnail: bi.thumbnail || "",
-                _id: bi._id,
-              }));
-              set({ items: updatedItems });
+        if (!token) {
+          // Not logged in — update local state only
+          set((state) => {
+            const exists = state.items.find((i) => i.id === item.id);
+            if (exists) {
+              return {
+                items: state.items.map((i) =>
+                  i.id === item.id ? { ...i, quantity: i.quantity + quantity } : i
+                ),
+              };
             }
-          } catch (err) {
-            console.warn("Failed to sync cart item to backend", err);
+            return { items: [...state.items, { ...item, quantity }] };
+          });
+          return;
+        }
+
+        // Logged in — save to backend, then update local state from response
+        try {
+          const res = await api.post("/cart/items", {
+            productId: String(item.id),
+            title: item.title,
+            price: item.price,
+            quantity: quantity,
+            thumbnail: item.thumbnail || "",
+          });
+
+          if (res.data && res.data.items) {
+            const updatedItems: CartItem[] = res.data.items.map((bi: any) => ({
+              id: Number(bi.productId),
+              title: bi.title || "",
+              price: bi.price || 0,
+              quantity: bi.quantity || 1,
+              thumbnail: bi.thumbnail || "",
+              _id: bi._id,
+            }));
+            set({ items: updatedItems });
           }
+        } catch (err) {
+          console.warn("Failed to add cart item to backend", err);
+          throw err;
         }
       },
 
@@ -107,15 +134,27 @@ export const useCart = create<CartState>()(
         const state = get();
         const item = state.items.find((i) => i.id === id);
 
-        // Optimistically update local state
-        set((state) => ({ items: state.items.filter((i) => i.id !== id) }));
+        if (!token) {
+          set((state) => ({ items: state.items.filter((i) => i.id !== id) }));
+          return;
+        }
 
-        // Sync to backend if authenticated
-        if (token && item?._id) {
+        if (item?._id) {
           try {
             await api.delete(`/cart/items/${item._id}`);
+            const res = await api.get("/cart");
+            const updatedItems: CartItem[] = (res.data.items || []).map((bi: any) => ({
+              id: Number(bi.productId),
+              title: bi.title || "",
+              price: bi.price || 0,
+              quantity: bi.quantity || 1,
+              thumbnail: bi.thumbnail || "",
+              _id: bi._id,
+            }));
+            set({ items: updatedItems });
           } catch (err) {
             console.warn("Failed to remove cart item from backend", err);
+            throw err;
           }
         }
       },
@@ -125,19 +164,31 @@ export const useCart = create<CartState>()(
         const state = get();
         const item = state.items.find((i) => i.id === id);
 
-        // Optimistically update local state
-        set((state) => ({
-          items: state.items
-            .map((i) => (i.id === id ? { ...i, quantity: Math.max(0, quantity) } : i))
-            .filter((i) => i.quantity > 0),
-        }));
+        if (!token) {
+          set((state) => ({
+            items: state.items
+              .map((i) => (i.id === id ? { ...i, quantity: Math.max(0, quantity) } : i))
+              .filter((i) => i.quantity > 0),
+          }));
+          return;
+        }
 
-        // Sync to backend if authenticated
-        if (token && item?._id && quantity > 0) {
+        if (item?._id && quantity > 0) {
           try {
             await api.patch(`/cart/items/${item._id}`, { quantity });
+            const res = await api.get("/cart");
+            const updatedItems: CartItem[] = (res.data.items || []).map((bi: any) => ({
+              id: Number(bi.productId),
+              title: bi.title || "",
+              price: bi.price || 0,
+              quantity: bi.quantity || 1,
+              thumbnail: bi.thumbnail || "",
+              _id: bi._id,
+            }));
+            set({ items: updatedItems });
           } catch (err) {
             console.warn("Failed to update cart item in backend", err);
+            throw err;
           }
         }
       },
@@ -145,16 +196,17 @@ export const useCart = create<CartState>()(
       clearCart: async () => {
         const token = typeof window !== "undefined" ? localStorage.getItem("accessToken") : null;
 
-        // Optimistically update local state
-        set({ items: [] });
+        if (!token) {
+          set({ items: [] });
+          return;
+        }
 
-        // Sync to backend if authenticated
-        if (token) {
-          try {
-            await api.delete("/cart");
-          } catch (err) {
-            console.warn("Failed to clear cart in backend", err);
-          }
+        try {
+          await api.delete("/cart");
+          set({ items: [] });
+        } catch (err) {
+          console.warn("Failed to clear cart in backend", err);
+          throw err;
         }
       },
 
