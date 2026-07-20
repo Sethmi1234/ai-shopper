@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import {
-  getCart,
+  getCartHandler,
   addItem,
   updateItem,
   removeItem,
@@ -15,7 +15,7 @@ const router = Router();
 // All cart routes require authentication
 router.use(protect);
 
-router.get("/", getCart);
+router.get("/", getCartHandler);
 
 router.post("/items", addItem);
 

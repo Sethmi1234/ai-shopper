@@ -1,24 +1,61 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLogin } from "../../hooks/mutations/useLogin";
+import { useRegister } from "../../hooks/mutations/useRegister";
 import Image from "next/image";
 import Link from "next/link";
-import { Sparkles, ShoppingBag, ArrowRight, Eye, EyeOff, User, Lock } from "lucide-react";
+import { useSearchParams } from "next/navigation";
+import { Sparkles, ShoppingBag, ArrowRight, Eye, EyeOff, User, Lock, UserPlus } from "lucide-react";
 
 export default function LoginPage() {
-  const { mutate, isPending, data, error } = useLogin();
+  const searchParams = useSearchParams();
+  const isRegistered = searchParams.get("registered") === "true";
 
+  const loginMutation = useLogin();
+  const registerMutation = useRegister();
+
+  const [isSignUp, setIsSignUp] = useState(false);
   const [form, setForm] = useState({
+    name: "",
     email: "",
     password: "",
   });
   const [showPassword, setShowPassword] = useState(false);
+  const [showRegisteredMessage, setShowRegisteredMessage] = useState(false);
+
+  useEffect(() => {
+    if (isRegistered) {
+      setShowRegisteredMessage(true);
+      // Auto-switch to login mode
+      setIsSignUp(false);
+    }
+  }, [isRegistered]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    mutate(form);
+    if (isSignUp) {
+      registerMutation.mutate({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      });
+    } else {
+      loginMutation.mutate({
+        email: form.email,
+        password: form.password,
+      });
+    }
   };
+
+  const toggleMode = () => {
+    setIsSignUp(!isSignUp);
+    setShowRegisteredMessage(false);
+  };
+
+  const isPending = isSignUp ? registerMutation.isPending : loginMutation.isPending;
+  const data = loginMutation.data;
+  const error = isSignUp ? registerMutation.error : loginMutation.error;
 
   return (
     <div className="flex min-h-screen bg-white">
@@ -54,7 +91,9 @@ export default function LoginPage() {
                 <span className="text-[#ccff00]">Starts Here</span>
               </h2>
               <p className="text-gray-400 text-base max-w-md leading-relaxed">
-                Sign in to unlock AI-powered recommendations, personalized deals, and a seamless shopping experience tailored just for you.
+                {isSignUp
+                  ? "Create your account and unlock AI-powered recommendations, personalized deals, and a seamless shopping experience tailored just for you."
+                  : "Sign in to unlock AI-powered recommendations, personalized deals, and a seamless shopping experience tailored just for you."}
               </p>
             </div>
 
@@ -100,14 +139,38 @@ export default function LoginPage() {
           {/* Header */}
           <div className="mb-10">
             <h1 className="text-4xl font-black text-black uppercase tracking-tighter mb-2">
-              Welcome Back
+              {isSignUp ? "Create Account" : "Welcome Back"}
             </h1>
             <p className="text-gray-500 text-sm">
-              Sign in to your account to continue shopping.
+              {isSignUp
+                ? "Create your account to start shopping with AI."
+                : "Sign in to your account to continue shopping."}
             </p>
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Name - only for sign up */}
+            {isSignUp && (
+              <div>
+                <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-2">
+                  Full Name
+                </label>
+                <div className="relative">
+                  <UserPlus size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                  <input
+                    type="text"
+                    className="w-full pl-11 pr-4 py-3.5 bg-white border border-gray-200 outline-none focus:border-black transition-colors text-gray-900 placeholder-gray-400 text-sm font-medium"
+                    placeholder="Enter your full name"
+                    value={form.name}
+                    onChange={(e) =>
+                      setForm({ ...form, name: e.target.value })
+                    }
+                    required
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Email */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-gray-700 mb-2">
@@ -123,6 +186,7 @@ export default function LoginPage() {
                   onChange={(e) =>
                     setForm({ ...form, email: e.target.value })
                   }
+                  required
                 />
               </div>
             </div>
@@ -137,11 +201,13 @@ export default function LoginPage() {
                 <input
                   type={showPassword ? "text" : "password"}
                   className="w-full pl-11 pr-11 py-3.5 bg-white border border-gray-200 outline-none focus:border-black transition-colors text-gray-900 placeholder-gray-400 text-sm font-medium"
-                  placeholder="Enter your password"
+                  placeholder={isSignUp ? "Create a password (min. 6 characters)" : "Enter your password"}
                   value={form.password}
                   onChange={(e) =>
                     setForm({ ...form, password: e.target.value })
                   }
+                  required
+                  minLength={isSignUp ? 6 : undefined}
                 />
                 <button
                   type="button"
@@ -153,22 +219,24 @@ export default function LoginPage() {
               </div>
             </div>
 
-            {/* Remember & Forgot */}
-            <div className="flex items-center justify-between">
-              <label className="flex items-center gap-2.5 cursor-pointer group">
-                <input
-                  type="checkbox"
-                  className="w-4 h-4 border-gray-300 text-black focus:ring-black focus:ring-offset-0"
-                />
-                <span className="text-sm text-gray-600 group-hover:text-black transition-colors font-medium">Remember me</span>
-              </label>
-              <button
-                type="button"
-                className="text-sm text-gray-500 hover:text-black font-bold uppercase tracking-wider transition-colors"
-              >
-                Forgot password?
-              </button>
-            </div>
+            {/* Remember & Forgot - only for sign in */}
+            {!isSignUp && (
+              <div className="flex items-center justify-between">
+                <label className="flex items-center gap-2.5 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 border-gray-300 text-black focus:ring-black focus:ring-offset-0"
+                  />
+                  <span className="text-sm text-gray-600 group-hover:text-black transition-colors font-medium">Remember me</span>
+                </label>
+                <button
+                  type="button"
+                  className="text-sm text-gray-500 hover:text-black font-bold uppercase tracking-wider transition-colors"
+                >
+                  Forgot password?
+                </button>
+              </div>
+            )}
 
             {/* Submit Button */}
             <button
@@ -187,18 +255,30 @@ export default function LoginPage() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                   </svg>
-                  Signing in...
+                  {isSignUp ? "Creating Account..." : "Signing in..."}
                 </>
               ) : (
                 <>
-                  Sign In <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  {isSignUp ? "Create Account" : "Sign In"} <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
                 </>
               )}
             </button>
           </form>
 
-          {/* Success Message */}
-          {data && (
+          {/* Registration Success Message */}
+          {showRegisteredMessage && (
+            <div className="mt-6 p-4 bg-[#ccff00]/10 border border-[#ccff00]/30">
+              <p className="text-black text-sm font-bold flex items-center gap-2">
+                <svg className="w-5 h-5 text-[#ccff00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z" />
+                </svg>
+                Account created successfully! Sign in with your credentials.
+              </p>
+            </div>
+          )}
+
+          {/* Login Success Message */}
+          {data && !isSignUp && (
             <div className="mt-6 p-4 bg-[#ccff00]/10 border border-[#ccff00]/30">
               <p className="text-black text-sm font-bold flex items-center gap-2">
                 <svg className="w-5 h-5 text-[#ccff00]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
@@ -216,30 +296,35 @@ export default function LoginPage() {
                 <svg className="w-5 h-5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z" />
                 </svg>
-                Invalid username or password. Please try again.
+                {isSignUp
+                  ? "Registration failed. This email may already be registered or the information is invalid."
+                  : "Invalid email or password. Please try again."}
               </p>
             </div>
           )}
 
-          {/* Sign Up Link */}
+          {/* Toggle Sign Up / Sign In */}
           <p className="mt-8 text-center text-sm text-gray-500">
-            Don't have an account?{" "}
+            {isSignUp ? "Already have an account?" : "Don't have an account?"}{" "}
             <button
               type="button"
+              onClick={toggleMode}
               className="text-black font-black uppercase tracking-wider hover:text-gray-600 transition-colors text-xs"
             >
-              Sign Up <ArrowRight size={12} className="inline" />
+              {isSignUp ? "Sign In" : "Sign Up"} <ArrowRight size={12} className="inline" />
             </button>
           </p>
 
-          {/* Demo Credentials */}
-          <div className="mt-8 p-5 bg-gray-50 border border-gray-100">
-            <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Demo Credentials</p>
-            <div className="text-sm text-gray-600 space-y-1">
-              <p><span className="font-bold text-black">Email:</span> test1@example.com</p>
-              <p><span className="font-bold text-black">Password:</span> password123</p>
+          {/* Demo Credentials - only for sign in */}
+          {!isSignUp && (
+            <div className="mt-8 p-5 bg-gray-50 border border-gray-100">
+              <p className="text-xs font-bold uppercase tracking-wider text-gray-500 mb-2">Demo Credentials</p>
+              <div className="text-sm text-gray-600 space-y-1">
+                <p><span className="font-bold text-black">Email:</span> test1@example.com</p>
+                <p><span className="font-bold text-black">Password:</span> password123</p>
+              </div>
             </div>
-          </div>
+          )}
         </div>
       </div>
     </div>
