@@ -1,7 +1,7 @@
 import { Router } from "express";
 
 import {
-  getWishlist,
+  getWishlistHandler,
   addWishlistItem,
   removeWishlistItem,
   clearWishlist,
@@ -11,7 +11,7 @@ import { protect } from "../middleware/auth.middleware";
 
 const router = Router();
 
-router.get("/", protect, getWishlist);
+router.get("/", protect, getWishlistHandler);
 
 router.post("/items", protect, addWishlistItem);
 

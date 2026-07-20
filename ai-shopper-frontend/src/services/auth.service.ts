@@ -8,6 +8,15 @@ export const loginUser = async (data: {
   return res.data;
 };
 
+export const registerUser = async (data: {
+  name: string;
+  email: string;
+  password: string;
+}) => {
+  const res = await api.post("/auth/register", data);
+  return res.data;
+};
+
 export const refreshToken = async (refreshToken: string) => {
   const res = await api.post("/auth/refresh", {
     refreshToken,

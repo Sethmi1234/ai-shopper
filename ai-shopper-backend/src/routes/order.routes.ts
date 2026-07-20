@@ -3,7 +3,7 @@ import { Router } from "express";
 import {
   createOrder,
   getOrders,
-  getOrderById,
+  getOrderByIdHandler,
 } from "../controllers/order.controller";
 
 import { protect } from "../middleware/auth.middleware";
@@ -20,6 +20,6 @@ router.post("/", createOrder);
 router.get("/", getOrders);
 
 // Get single order by ID
-router.get("/:id", getOrderById);
+router.get("/:id", getOrderByIdHandler);
 
 export default router;
