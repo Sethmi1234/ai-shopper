@@ -17,7 +17,7 @@ type ShareModalProps = {
   isOpen: boolean;
   onClose: () => void;
   product: {
-    id: number;
+    id: string;
     title: string;
     price: number;
     thumbnail?: string;

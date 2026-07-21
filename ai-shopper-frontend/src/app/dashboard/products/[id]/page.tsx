@@ -55,7 +55,7 @@ function StarRating({ rating, size = 16 }: { rating: number; size?: number }) {
 
 export default function ProductDetailPage() {
   const params = useParams();
-  const id = Number(params?.id);
+  const id = String(params?.id || "");
 
   const { data: product, isLoading, error } = useProductById(id);
 
@@ -106,7 +106,9 @@ export default function ProductDetailPage() {
   const images: string[] = product
     ? product.images?.length
       ? product.images
-      : [product.thumbnail]
+      : product.thumbnail
+      ? [product.thumbnail]
+      : []
     : [];
 
   const prevImage = () =>
@@ -141,9 +143,11 @@ export default function ProductDetailPage() {
     );
   }
 
+  const discountPercentage = product.discountPercentage || 0;
+
   const discountedOriginal =
-    product.discountPercentage > 0
-      ? (product.price / (1 - product.discountPercentage / 100)).toFixed(2)
+    discountPercentage > 0
+      ? (product.price / (1 - discountPercentage / 100)).toFixed(2)
       : null;
 
   const reviewCount = Array.isArray(product.reviews)
@@ -326,9 +330,9 @@ export default function ProductDetailPage() {
                     ${discountedOriginal}
                   </p>
                 )}
-                {product.discountPercentage > 0 && (
+                {discountPercentage > 0 && (
                   <span className="bg-red-100 text-red-600 text-sm font-bold px-2 py-0.5 rounded-full pb-1">
-                    -{Math.round(product.discountPercentage)}% OFF
+                    -{Math.round(discountPercentage)}% OFF
                   </span>
                 )}
               </div>

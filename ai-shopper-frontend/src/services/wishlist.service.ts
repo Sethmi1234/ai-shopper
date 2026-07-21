@@ -1,7 +1,7 @@
 import api from "../lib/axios";
 
 export type WishlistItem = {
-  id: number;
+  id: string;
   productId: string;
   title?: string;
   price: number;

@@ -38,7 +38,7 @@ export default function AiRecommend({ prompt, runKey = 0, compact = false }: Pro
   const removeWishlistMutation = useRemoveWishlistItem();
   
   // Helper functions
-  const isWishlisted = (id: number) => {
+  const isWishlisted = (id: string) => {
     return wishlistData?.products?.some((item: any) => item.productId === String(id)) || false;
   };
   

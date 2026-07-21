@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import api from "../lib/axios";
 
 export type WishlistItem = {
-  id: number; // DummyJSON product ID
+  id: string; // Product _id from MongoDB
   title: string;
   price: number;
   thumbnail?: string;
@@ -16,8 +16,8 @@ type WishlistState = {
   isSyncing: boolean;
   toggleItem: (item: WishlistItem) => Promise<void>;
   addItem: (item: WishlistItem) => Promise<void>;
-  removeItem: (id: number) => Promise<void>;
-  isWishlisted: (id: number) => boolean;
+  removeItem: (id: string) => Promise<void>;
+  isWishlisted: (id: string) => boolean;
   clearWishlist: () => Promise<void>;
   syncFromBackend: () => Promise<void>;
   pushToBackend: () => Promise<void>;
@@ -61,7 +61,7 @@ export const useWishlist = create<WishlistState>()(
           set({ isSyncing: true });
           const res = await api.get("/wishlist");
           const backendItems: WishlistItem[] = (res.data.products || []).map((item: any) => ({
-            id: Number(item.productId),
+            id: String(item.productId),
             title: item.title || "",
             price: item.price || 0,
             thumbnail: item.thumbnail || "",
@@ -89,7 +89,7 @@ export const useWishlist = create<WishlistState>()(
               await api.delete(`/wishlist/items/${item.id}`);
               const res = await api.get("/wishlist");
               const backendItems: WishlistItem[] = (res.data.products || []).map((bi: any) => ({
-                id: Number(bi.productId),
+                id: String(bi.productId),
                 title: bi.title || "",
                 price: bi.price || 0,
                 thumbnail: bi.thumbnail || "",
@@ -113,7 +113,7 @@ export const useWishlist = create<WishlistState>()(
               });
               if (res.data && res.data.products) {
                 const backendItems: WishlistItem[] = res.data.products.map((bi: any) => ({
-                  id: Number(bi.productId),
+                  id: String(bi.productId),
                   title: bi.title || "",
                   price: bi.price || 0,
                   thumbnail: bi.thumbnail || "",
@@ -146,7 +146,7 @@ export const useWishlist = create<WishlistState>()(
               });
               if (res.data && res.data.products) {
                 const backendItems: WishlistItem[] = res.data.products.map((bi: any) => ({
-                  id: Number(bi.productId),
+                  id: String(bi.productId),
                   title: bi.title || "",
                   price: bi.price || 0,
                   thumbnail: bi.thumbnail || "",
@@ -171,7 +171,7 @@ export const useWishlist = create<WishlistState>()(
             await api.delete(`/wishlist/items/${id}`);
             const res = await api.get("/wishlist");
             const backendItems: WishlistItem[] = (res.data.products || []).map((bi: any) => ({
-              id: Number(bi.productId),
+              id: String(bi.productId),
               title: bi.title || "",
               price: bi.price || 0,
               thumbnail: bi.thumbnail || "",

@@ -2,7 +2,7 @@ import api from "../lib/axios";
 
 export type OrderItem = {
   productId: string;
-  id?: number;
+  id?: string;
   quantity: number;
   price: number;
   title?: string;

@@ -13,7 +13,7 @@ type ProductCardProps = {
   reviews: number;
   img: string;
   badgeType?: "match" | "trending";
-  id?: number;
+  id?: string;
 };
 
 export default function ProductCard({ title, category, price, rating, reviews, img, badgeType, id }: ProductCardProps) {

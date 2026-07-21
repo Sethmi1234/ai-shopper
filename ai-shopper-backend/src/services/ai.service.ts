@@ -1,5 +1,6 @@
 import aiClient from "../config/ai";
 import { ALLOWED_CATEGORIES } from "../lib/categories";
+import { getProducts } from "./product.service";
 
 const MODEL = process.env.NVIDIA_MODEL || "mistralai/mistral-large-3-675b-instruct-2512";
 
@@ -16,12 +17,12 @@ export interface AIResponse {
   filters?: any;
   reply?: string;
   confidenceScore?: number;
-  filteredIds?: number[];
+  filteredIds?: string[];
   reasoning?: string;
   needsClarification?: boolean;
   clarificationQuestion?: string;
   clarificationOptions?: string[];
-  matches?: Array<{ id: number; score: number; reason: string }>;
+  matches?: Array<{ id: string; score: number; reason: string }>;
   error?: string;
   success?: boolean;
   fallback?: boolean;
@@ -164,7 +165,7 @@ export const filterProductsWithAI = async (
   const productSummaries = products
     .slice(0, 30)
     .map((p: any) => ({
-      id: p.id,
+      id: p._id ? String(p._id) : String(p.id),
       title: p.title,
       category: p.category,
       price: p.price,
@@ -202,12 +203,12 @@ ${JSON.stringify(productSummaries, null, 2)}
 Return ONLY valid JSON. No markdown. No explanation.
 
 {
-  "filteredIds": [1, 2, 3],
+  "filteredIds": ["id1", "id2", "id3"],
   "reasoning": "brief explanation of why you selected these"
 }
 
 Rules:
-- filteredIds must be an array of product IDs (numbers) from the list above
+- filteredIds must be an array of product id strings from the list above
 - Return maximum 6 products
 - Return minimum 0 products (empty array if nothing fits)
 - NEVER invent IDs not in the list
@@ -221,14 +222,14 @@ Rules:
 
   if (aiResult.error || !Array.isArray(aiResult.filteredIds)) {
     return {
-      filteredIds: products.slice(0, 4).map((p: any) => p.id),
+      filteredIds: products.slice(0, 4).map((p: any) => String(p._id || p.id)),
       fallback: true,
     };
   }
 
-  const validIds = new Set(products.map((p: any) => p.id));
-  const safeIds = aiResult.filteredIds
-    .filter((id: any) => typeof id === "number" && validIds.has(id))
+  const validIds = new Set(products.map((p: any) => String(p._id || p.id)));
+  const safeIds = (aiResult.filteredIds as string[])
+    .filter((id: any) => typeof id === "string" && validIds.has(id))
     .slice(0, 6);
 
   return {
@@ -351,21 +352,21 @@ ${fullConversation}`;
     };
   }
 
-  // Fetch products from DummyJSON using filters
+  // Fetch products from our own database using filters
   let rawProducts: any[] = [];
   try {
-    const baseUrl = process.env.DUMMYJSON_BASE_URL || "https://dummyjson.com";
-    let url = `${baseUrl}/products`;
-    
+    const query: { page: number; limit: number; category?: string } = {
+      page: 1,
+      limit: 50,
+    };
     if (filters.category) {
-      url = `${baseUrl}/products/category/${encodeURIComponent(filters.category)}`;
+      query.category = filters.category;
     }
-    
-    const productsRes = await fetch(url);
-    const data = await productsRes.json();
-    rawProducts = data.products || [];
-    
-    // Apply price filters
+
+    const result = await getProducts(query);
+    rawProducts = result.data;
+
+    // Apply price filters in memory (DB doesn't have a price range index yet)
     if (filters.minPrice || filters.maxPrice) {
       rawProducts = rawProducts.filter((p: any) => {
         const price = Number(p.price);
@@ -383,11 +384,11 @@ ${fullConversation}`;
   if (rawProducts.length > 0) {
     try {
       const filterData = await filterProductsWithAI(rawProducts, intent, message, filters);
-      const filteredIds: number[] = filterData.filteredIds || [];
+      const filteredIds: string[] = (filterData.filteredIds || []) as string[];
 
       if (filteredIds.length > 0) {
         finalProducts = filteredIds
-          .map((id) => rawProducts.find((p: any) => p.id === id))
+          .map((id) => rawProducts.find((p: any) => String(p._id || p.id) === id))
           .filter(Boolean);
       }
     } catch (err) {
@@ -411,7 +412,7 @@ ${fullConversation}`;
         ? `${reply} Unfortunately I couldn't find matching products right now — try adjusting your search.`
         : reply,
       products: finalProducts.map((p: any) => ({
-        id: p.id,
+        id: String(p._id || p.id),
         title: p.title,
         price: p.price,
         category: p.category,
@@ -548,11 +549,9 @@ export const smartRecommendWithProducts = async (
   prompt: string,
   conversation: string
 ): Promise<any> => {
-  // Fetch all products from DummyJSON
-  const baseUrl = process.env.DUMMYJSON_BASE_URL || "https://dummyjson.com";
-  const productsRes = await fetch(`${baseUrl}/products?limit=200`);
-  const productsData = await productsRes.json();
-  const allProducts = productsData.products || [];
+  // Fetch all products from our own database (no DummyJSON dependency)
+  const result = await getProducts({ page: 1, limit: 200 });
+  const allProducts = result.data;
 
   if (allProducts.length === 0) {
     return {
@@ -562,21 +561,21 @@ export const smartRecommendWithProducts = async (
     };
   }
 
-  const result = await smartRecommend(prompt.trim(), conversation || "", allProducts);
+  const aiResult = await smartRecommend(prompt.trim(), conversation || "", allProducts);
 
   // Handle clarification response
-  if (result.needsClarification) {
+  if (aiResult.needsClarification) {
     return {
       needsClarification: true,
-      clarificationQuestion: result.clarificationQuestion || "Could you tell me more about what you're looking for?",
-      clarificationOptions: result.clarificationOptions || [],
-      reply: result.reply || "",
+      clarificationQuestion: aiResult.clarificationQuestion || "Could you tell me more about what you're looking for?",
+      clarificationOptions: aiResult.clarificationOptions || [],
+      reply: aiResult.reply || "",
       products: [],
     };
   }
 
   // Validate matches and map back to full product data
-  const matches = result.matches || [];
+  const matches = aiResult.matches || [];
   const validatedMatches = matches
     .filter((m: any) => (typeof m.id === "number" || typeof m.id === "string") && m.score >= 0.7)
     .map((m: any) => ({
@@ -586,13 +585,14 @@ export const smartRecommendWithProducts = async (
     }));
 
   // Map AI-selected IDs back to full product objects
-  const selectedIds = new Set(validatedMatches.map((m: any) => m.id));
+  const selectedIds = new Set(validatedMatches.map((m: any) => String(m.id)));
   const matchedProducts = allProducts
-    .filter((p: any) => selectedIds.has(p.id))
+    .filter((p: any) => selectedIds.has(String(p._id || p.id)))
     .map((p: any) => {
-      const match = validatedMatches.find((m: any) => m.id === p.id);
+      const match = validatedMatches.find((m: any) => String(m.id) === String(p._id || p.id));
       return {
         ...p,
+        id: String(p._id || p.id),
         aiScore: match?.score || 0.5,
         aiReason: match?.reason || "",
       };
@@ -601,7 +601,7 @@ export const smartRecommendWithProducts = async (
 
   return {
     needsClarification: false,
-    reply: result.reply || `Found ${matchedProducts.length} products that match your request!`,
+    reply: aiResult.reply || `Found ${matchedProducts.length} products that match your request!`,
     products: matchedProducts,
   };
 };

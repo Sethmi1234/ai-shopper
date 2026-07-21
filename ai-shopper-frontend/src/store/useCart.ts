@@ -3,7 +3,7 @@ import { persist } from "zustand/middleware";
 import api from "../lib/axios";
 
 export type CartItem = {
-  id: number; // DummyJSON product ID
+  id: string; // Product _id from MongoDB
   title: string;
   price: number;
   quantity: number;
@@ -16,8 +16,8 @@ type CartState = {
   items: CartItem[];
   isSyncing: boolean;
   addItem: (item: Omit<CartItem, "quantity">, quantity?: number) => Promise<void>;
-  removeItem: (id: number) => Promise<void>;
-  updateQuantity: (id: number, quantity: number) => Promise<void>;
+  removeItem: (id: string) => Promise<void>;
+  updateQuantity: (id: string, quantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
   getTotalItems: () => number;
   getTotalPrice: () => number;
@@ -66,7 +66,7 @@ export const useCart = create<CartState>()(
           set({ isSyncing: true });
           const res = await api.get("/cart");
           const backendItems: CartItem[] = (res.data.items || []).map((item: any) => ({
-            id: Number(item.productId),
+            id: String(item.productId),
             title: item.title || "",
             price: item.price || 0,
             quantity: item.quantity || 1,
@@ -114,7 +114,7 @@ export const useCart = create<CartState>()(
 
           if (res.data && res.data.items) {
             const updatedItems: CartItem[] = res.data.items.map((bi: any) => ({
-              id: Number(bi.productId),
+              id: String(bi.productId),
               title: bi.title || "",
               price: bi.price || 0,
               quantity: bi.quantity || 1,
@@ -144,7 +144,7 @@ export const useCart = create<CartState>()(
             await api.delete(`/cart/items/${item._id}`);
             const res = await api.get("/cart");
             const updatedItems: CartItem[] = (res.data.items || []).map((bi: any) => ({
-              id: Number(bi.productId),
+              id: String(bi.productId),
               title: bi.title || "",
               price: bi.price || 0,
               quantity: bi.quantity || 1,
@@ -178,7 +178,7 @@ export const useCart = create<CartState>()(
             await api.patch(`/cart/items/${item._id}`, { quantity });
             const res = await api.get("/cart");
             const updatedItems: CartItem[] = (res.data.items || []).map((bi: any) => ({
-              id: Number(bi.productId),
+              id: String(bi.productId),
               title: bi.title || "",
               price: bi.price || 0,
               quantity: bi.quantity || 1,
