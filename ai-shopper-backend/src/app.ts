@@ -67,4 +67,8 @@ app.use(
 productRoutes
 );
 
+import { errorHandler } from "./middleware/errorHandler";
+
+app.use(errorHandler);
+
 export default app;

@@ -9,6 +9,7 @@ import {
   registerSchema,
   loginSchema,
 } from "../validators/auth.validator";
+import { AppError } from "../utils/AppError";
 
 export interface RegisterData {
   name: string;
@@ -36,7 +37,7 @@ export const registerUser = async (data: RegisterData): Promise<AuthResult> => {
 
   const exists = await User.findOne({ email: parsed.email });
   if (exists) {
-    throw Object.assign(new Error("Email already exists"), { statusCode: 400 });
+    throw new AppError(400, "Email already exists");
   }
 
   const hashedPassword = await bcrypt.hash(parsed.password, 10);
@@ -61,12 +62,12 @@ export const loginUser = async (data: LoginData): Promise<AuthResult> => {
 
   const user = await User.findOne({ email: parsed.email });
   if (!user) {
-    throw Object.assign(new Error("Invalid credentials"), { statusCode: 401 });
+    throw new AppError(401, "Invalid credentials");
   }
 
   const match = await bcrypt.compare(parsed.password, user.password);
   if (!match) {
-    throw Object.assign(new Error("Invalid credentials"), { statusCode: 401 });
+    throw new AppError(401, "Invalid credentials");
   }
 
   const accessToken = generateAccessToken(user._id.toString());
@@ -88,7 +89,7 @@ export const loginUser = async (data: LoginData): Promise<AuthResult> => {
 
 export const refreshUserToken = async (refreshToken: string): Promise<{ accessToken: string; refreshToken: string }> => {
   if (!refreshToken) {
-    throw Object.assign(new Error("Refresh token is required"), { statusCode: 400 });
+    throw new AppError(400, "Refresh token is required");
   }
 
   let decoded: { id: string };
@@ -99,14 +100,14 @@ export const refreshUserToken = async (refreshToken: string): Promise<{ accessTo
     ) as { id: string };
   } catch (error: any) {
     if (error.name === "TokenExpiredError") {
-      throw Object.assign(new Error("Refresh token expired"), { statusCode: 401 });
+      throw new AppError(401, "Refresh token expired");
     }
-    throw Object.assign(new Error("Invalid refresh token"), { statusCode: 401 });
+    throw new AppError(401, "Invalid refresh token");
   }
 
   const user = await User.findById(decoded.id);
   if (!user || user.refreshToken !== refreshToken) {
-    throw Object.assign(new Error("Invalid refresh token"), { statusCode: 401 });
+    throw new AppError(401, "Invalid refresh token");
   }
 
   const newAccessToken = generateAccessToken(user._id.toString());
@@ -125,7 +126,7 @@ export const getCurrentUser = async (userId: string): Promise<AuthResult["user"]
   const user = await User.findById(userId).select("-password -refreshToken");
 
   if (!user) {
-    throw Object.assign(new Error("User not found"), { statusCode: 404 });
+    throw new AppError(404, "User not found");
   }
 
   return {

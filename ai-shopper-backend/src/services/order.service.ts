@@ -1,5 +1,6 @@
 import Cart from "../models/cart.model";
 import Order from "../models/order.model";
+import { AppError } from "../utils/AppError";
 
 export interface OrderResult {
   message: string;
@@ -31,11 +32,9 @@ export const createOrderFromCart = async (
     const cart = await Cart.findOne({ user: userId });
 
     if (!cart || cart.items.length === 0) {
-      throw Object.assign(
-        new Error(
-          "Cart is empty. Please add items to your cart before checkout."
-        ),
-        { statusCode: 400 }
+      throw new AppError(
+        400,
+        "Cart is empty. Please add items to your cart before checkout."
       );
     }
 
@@ -150,7 +149,7 @@ export const getOrderById = async (
   });
 
   if (!order) {
-    throw Object.assign(new Error("Order not found"), { statusCode: 404 });
+    throw new AppError(404, "Order not found");
   }
 
   return order;

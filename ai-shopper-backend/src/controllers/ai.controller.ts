@@ -6,6 +6,7 @@ import {
   smartRecommendWithProducts,
 } from "../services/ai.service";
 import { ALLOWED_CATEGORIES } from "../lib/categories";
+import { AppError } from "../utils/AppError";
 
 /**
  * POST /ai/classify
@@ -16,7 +17,7 @@ export const classify = async (req: Request, res: Response, next: NextFunction) 
     const { message } = req.body;
 
     if (!message || typeof message !== "string") {
-      return res.status(400).json({ error: "Message is required." });
+      throw new AppError(400, "Message is required.");
     }
 
     const result = await classifyIntent(message.trim(), ALLOWED_CATEGORIES);
@@ -60,7 +61,7 @@ export const recommend = async (req: Request, res: Response, next: NextFunction)
     const { message, conversationHistory } = req.body;
 
     if (!message || typeof message !== "string") {
-      return res.status(400).json({ error: "Message is required." });
+      throw new AppError(400, "Message is required.");
     }
 
     const result = await recommendProducts(message, conversationHistory || []);
@@ -79,7 +80,7 @@ export const smartRecommendHandler = async (req: Request, res: Response, next: N
     const { prompt, conversation } = req.body;
 
     if (!prompt || typeof prompt !== "string") {
-      return res.status(400).json({ error: "Prompt is required." });
+      throw new AppError(400, "Prompt is required.");
     }
 
     const result = await smartRecommendWithProducts(prompt.trim(), conversation || "");
