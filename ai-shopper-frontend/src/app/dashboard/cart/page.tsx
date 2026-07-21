@@ -58,7 +58,7 @@ export default function CartPage() {
     }
   };
 
-  const handleRemoveItem = async (id: number) => {
+  const handleRemoveItem = async (id: string) => {
     try {
       await removeItem(id);
     } catch (err) {
@@ -66,7 +66,7 @@ export default function CartPage() {
     }
   };
 
-  const handleUpdateQuantity = async (id: number, qty: number) => {
+  const handleUpdateQuantity = async (id: string, qty: number) => {
     try {
       await updateQuantity(id, qty);
     } catch (err) {

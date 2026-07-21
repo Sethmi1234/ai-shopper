@@ -10,7 +10,7 @@ import useCart from "../../../store/useCart";
 export default function FavoritesPage() {
   const { items, removeItem, clearWishlist } = useWishlist();
   const addItem = useCart((s: any) => s.addItem);
-  const [addedIds, setAddedIds] = useState<Set<number>>(new Set([0]));
+  const [addedIds, setAddedIds] = useState<Set<string>>(new Set());
   const [isClearing, setIsClearing] = useState(false);
 
   // Initialize addedIds with a dummy value so initial render works
@@ -38,7 +38,7 @@ export default function FavoritesPage() {
     }
   };
 
-  const handleRemoveItem = async (id: number) => {
+  const handleRemoveItem = async (id: string) => {
     try {
       await removeItem(id);
     } catch (err) {

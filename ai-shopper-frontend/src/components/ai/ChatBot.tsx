@@ -27,7 +27,7 @@ type ConversationTurn = {
 };
 
 type Product = {
-  id: number;
+  id: string;
   title: string;
   price: number;
   category?: string;
@@ -75,9 +75,9 @@ export default function ChatBot() {
   const { addItem: cartAddItem } = useCart();
   
   // Helper functions
-  const isWishlistedCheck = (id: number) => isWishlisted(id);
+  const isWishlistedCheck = (id: string) => isWishlisted(id);
   
-  const handleWishlistToggle = (product: { id: number; title: string; price: number; thumbnail?: string; category?: string; rating?: number }) => {
+  const handleWishlistToggle = (product: { id: string; title: string; price: number; thumbnail?: string; category?: string; rating?: number }) => {
     wishlistToggle({
       id: product.id,
       title: product.title,
@@ -88,7 +88,7 @@ export default function ChatBot() {
     });
   };
   
-  const handleAddToCart = (product: { id: number; title: string; price: number; thumbnail?: string; category?: string }) => {
+  const handleAddToCart = (product: { id: string; title: string; price: number; thumbnail?: string; category?: string }) => {
     cartAddItem({
       id: product.id,
       title: product.title,
@@ -156,90 +156,36 @@ export default function ChatBot() {
         .map((m) => `${m.role === "user" ? "User" : "AI"}: ${m.content}`)
         .join("\n");
 
-      // ── Stage 1: Call classify via backend (through Next.js proxy) ──
-      // classify is a public endpoint (no auth required)
-      const classifyResponse = await fetch("/api/ai/classify", {
+      // Ask the backend to classify the request and fetch matching products
+      // from our own MongoDB catalog.
+      const recommendResponse = await fetch("/api/ai/recommend", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, conversationHistory }),
       });
 
-      if (!classifyResponse.ok) {
-        const errText = await classifyResponse.text();
-        console.error(`Classify error ${classifyResponse.status}:`, errText);
-        throw Object.assign(new Error("Request failed"), { status: classifyResponse.status });
+      if (!recommendResponse.ok) {
+        const errText = await recommendResponse.text();
+        console.error(`AI recommend error ${recommendResponse.status}:`, errText);
+        throw Object.assign(new Error("Request failed"), { status: recommendResponse.status });
       }
 
-      const classifyData = await classifyResponse.json();
-      
-      // ── Stage 2: Fetch products from DummyJSON based on classification ──
-      let products: Product[] = [];
-      let category = classifyData.category || "general";
-      let maxPrice: number | null = null;
-      let minPrice: number | null = null;
-      let reply = "";
+      const recommendData = await recommendResponse.json();
+      const decision = recommendData.data || recommendData;
+      const products: Product[] = Array.isArray(decision.products)
+        ? decision.products.map((product: any) => ({
+            ...product,
+            id: String(product.id || product._id),
+          }))
+        : [];
+      const reply =
+        typeof decision.reply === "string" && decision.reply.trim()
+          ? decision.reply
+          : products.length > 0
+          ? `I found ${products.length} product${products.length !== 1 ? "s" : ""} for you!`
+          : getFallbackResponse(text);
       let isFollowUp = false;
-
-      if (category !== "general") {
-        setLoadingStage("searching");
-
-        // Fetch products from DummyJSON
-        const baseUrl = process.env.NEXT_PUBLIC_DUMMYJSON_URL || "https://dummyjson.com";
-        const productsRes = await fetch(`${baseUrl}/products/category/${category}`);
-        const data = await productsRes.json();
-        products = data.products || [];
-
-        // Extract price filters from user message
-        const lowerText = text.toLowerCase();
-        const maxPriceMatch = lowerText.match(/(?:under|below|max|less than|cheaper than|budget)\s*[$]?\s*(\d+)/i);
-        if (maxPriceMatch) {
-          maxPrice = parseInt(maxPriceMatch[1], 10);
-        }
-
-        const minPriceMatch = lowerText.match(/(?:above|over|min|more than|at least)\s*[$]?\s*(\d+)/i);
-        if (minPriceMatch) {
-          minPrice = parseInt(minPriceMatch[1], 10);
-        }
-
-        // Apply price filters
-        if (maxPrice !== null) {
-          products = products.filter((p: any) => p.price <= maxPrice!);
-        }
-        if (minPrice !== null) {
-          products = products.filter((p: any) => p.price >= minPrice!);
-        }
-
-        // Keyword filtering
-        const keywords = text
-          .toLowerCase()
-          .split(/\s+/)
-          .filter((word) => word.length > 2 && !["what", "show", "find", "looking", "for", "have", "the", "a", "an", "in", "under", "cheap", "best", "max", "min", "above", "below", "over", "less", "more", "than", "budget", "at", "least"].includes(word));
-
-        if (keywords.length > 0) {
-          products = products.filter((p: any) =>
-            keywords.some((keyword) =>
-              p.title?.toLowerCase().includes(keyword) ||
-              p.description?.toLowerCase().includes(keyword) ||
-              p.category?.toLowerCase().includes(keyword)
-            )
-          );
-        }
-
-        setLoadingStage("filtering");
-        await new Promise((r) => setTimeout(r, 300));
-      }
-
-      // Generate AI reply based on classification
-      if (category === "general") {
-        reply = getFallbackResponse(text);
-      } else if (products.length === 0) {
-        reply = `I searched in the ${category} category but couldn't find matching products. Try adjusting your price range or browse our full catalog.`;
-      } else {
-        const priceInfo = maxPrice || minPrice
-          ? ` within your ${maxPrice ? `max $${maxPrice}` : `min $${minPrice}`} budget`
-          : "";
-        reply = `I found ${products.length} product${products.length !== 1 ? "s" : ""} in ${category}${priceInfo} for you!`;
-      }
+      setLoadingStage("filtering");
 
       const assistantMsg: Message = {
         role: "assistant",

@@ -7,6 +7,7 @@ import cartRoutes from "./routes/cart.routes";
 import wishlistRoutes from "./routes/wishlist.routes";
 import orderRoutes from "./routes/order.routes";
 import aiRoutes from "./routes/ai.routes";
+import productRoutes from "./routes/product.routes";
 
 
 const app = express();
@@ -59,6 +60,11 @@ orderRoutes
 app.use(
 "/ai",
 aiRoutes
+);
+
+app.use(
+"/products",
+productRoutes
 );
 
 export default app;
