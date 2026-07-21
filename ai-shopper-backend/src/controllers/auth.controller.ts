@@ -16,15 +16,6 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
       user: result.user,
     });
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      return res.status(400).json({
-        message: "Validation error",
-        errors: error.errors,
-      });
-    }
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     next(error);
   }
 };
@@ -39,15 +30,6 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
       user: result.user,
     });
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      return res.status(400).json({
-        message: "Validation error",
-        errors: error.errors,
-      });
-    }
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     next(error);
   }
 };
@@ -59,15 +41,6 @@ export const refresh = async (req: Request, res: Response, next: NextFunction) =
     const result = await refreshUserToken(refreshToken);
     res.json(result);
   } catch (error: any) {
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
-    if (error.name === "TokenExpiredError") {
-      return res.status(401).json({ message: "Refresh token expired" });
-    }
-    if (error.name === "JsonWebTokenError") {
-      return res.status(401).json({ message: "Invalid refresh token" });
-    }
     next(error);
   }
 };
@@ -78,9 +51,6 @@ export const getMe = async (req: AuthRequest, res: Response, next: NextFunction)
     const user = await getCurrentUser(req.user!.id);
     res.json({ user });
   } catch (error: any) {
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     next(error);
   }
 };

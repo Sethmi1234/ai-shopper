@@ -1,5 +1,6 @@
 import { Product } from "../models/Product";
 import { Category } from "../models/Category";
+import { AppError } from "../utils/AppError";
 
 export interface ProductQuery {
   page?: number;
@@ -115,8 +116,12 @@ export const getProducts = async ({
 /**
  * Get a single product by its MongoDB _id.
  */
-export const getProductById = async (id: string): Promise<any | null> => {
-  return Product.findById(id).lean();
+export const getProductById = async (id: string): Promise<any> => {
+  const product = await Product.findById(id).lean();
+  if (!product) {
+    throw new AppError(404, "Product not found");
+  }
+  return product;
 };
 
 /**
@@ -135,7 +140,13 @@ export const updateProduct = async (
     return null; // nothing to update
   }
 
-  return Product.findByIdAndUpdate(id, { $set: allowed }, { new: true }).lean();
+  const updated = await Product.findByIdAndUpdate(id, { $set: allowed }, { new: true }).lean();
+  
+  if (!updated) {
+    throw new AppError(404, "Product not found");
+  }
+
+  return updated;
 };
 
 /**

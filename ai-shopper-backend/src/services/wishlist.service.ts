@@ -1,4 +1,5 @@
 import Wishlist from "../models/wishlist.model";
+import { AppError } from "../utils/AppError";
 
 export interface AddWishlistItemData {
   productId: string;
@@ -64,7 +65,7 @@ export const removeFromWishlist = async (
   const wishlist = await Wishlist.findOne({ user: userId });
 
   if (!wishlist) {
-    throw Object.assign(new Error("Wishlist not found"), { statusCode: 404 });
+    throw new AppError(404, "Wishlist not found");
   }
 
   wishlist.products = wishlist.products.filter(

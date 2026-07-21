@@ -13,9 +13,6 @@ export const createOrder = async (req: AuthRequest, res: Response, next: NextFun
     const result = await createOrderFromCart(userId, req.body?.items, req.body?.totalAmount);
     res.status(201).json(result);
   } catch (error: any) {
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     next(error);
   }
 };

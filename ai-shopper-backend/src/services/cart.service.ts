@@ -1,4 +1,5 @@
 import Cart from "../models/cart.model";
+import { AppError } from "../utils/AppError";
 
 export interface AddItemData {
   productId: string;
@@ -68,13 +69,13 @@ export const updateCartItem = async (
   const cart = await Cart.findOne({ user: userId });
 
   if (!cart) {
-    throw Object.assign(new Error("Cart not found"), { statusCode: 404 });
+    throw new AppError(404, "Cart not found");
   }
 
   const item = (cart.items as any).id(itemId);
 
   if (!item) {
-    throw Object.assign(new Error("Item not found in cart"), { statusCode: 404 });
+    throw new AppError(404, "Item not found in cart");
   }
 
   item.quantity = data.quantity;
@@ -87,7 +88,7 @@ export const removeCartItem = async (userId: string, itemId: string): Promise<Ca
   const cart = await Cart.findOne({ user: userId });
 
   if (!cart) {
-    throw Object.assign(new Error("Cart not found"), { statusCode: 404 });
+    throw new AppError(404, "Cart not found");
   }
 
   (cart.items as any).pull(itemId);

@@ -26,15 +26,6 @@ export const addItem = async (req: AuthRequest, res: Response, next: NextFunctio
     const result = await addItemToCart(req.user!.id, data);
     res.json(result);
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      return res.status(400).json({
-        message: "Validation error",
-        errors: error.errors,
-      });
-    }
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     next(error);
   }
 };
@@ -47,15 +38,6 @@ export const updateItem = async (req: AuthRequest, res: Response, next: NextFunc
     const result = await updateCartItem(req.user!.id, id, data);
     res.json(result);
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      return res.status(400).json({
-        message: "Validation error",
-        errors: error.errors,
-      });
-    }
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     next(error);
   }
 };
@@ -67,9 +49,6 @@ export const removeItem = async (req: AuthRequest, res: Response, next: NextFunc
     const result = await removeCartItem(req.user!.id, id);
     res.json(result);
   } catch (error: any) {
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     next(error);
   }
 };

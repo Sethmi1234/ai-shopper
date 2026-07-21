@@ -27,15 +27,6 @@ export const addWishlistItem = async (req: AuthRequest, res: Response, next: Nex
     const result = await addToWishlist(userId, data);
     res.status(200).json(result);
   } catch (error: any) {
-    if (error.name === "ZodError") {
-      return res.status(400).json({
-        message: "Validation error",
-        errors: error.errors,
-      });
-    }
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     next(error);
   }
 };
@@ -48,9 +39,6 @@ export const removeWishlistItem = async (req: AuthRequest, res: Response, next: 
     const result = await removeFromWishlist(userId, productId);
     res.status(200).json(result);
   } catch (error: any) {
-    if (error.statusCode) {
-      return res.status(error.statusCode).json({ message: error.message });
-    }
     next(error);
   }
 };

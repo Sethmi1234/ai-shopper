@@ -67,11 +67,6 @@ export const getProduct = async (
     }
     res.json(product);
   } catch (error) {
-    // If the id is not a valid ObjectId, mongoose throws a CastError
-    if ((error as any).name === "CastError") {
-      res.status(400).json({ error: "Invalid product id" });
-      return;
-    }
     next(error);
   }
 };
@@ -98,10 +93,6 @@ export const updateProductHandler = async (
 
     res.json({ message: "Product updated", product });
   } catch (error) {
-    if ((error as any).name === "CastError") {
-      res.status(400).json({ error: "Invalid product id" });
-      return;
-    }
     next(error);
   }
 };
