@@ -14,7 +14,6 @@ export const useLogin = () => {
       // Save tokens to localStorage (for API interceptors)
       const token = data.accessToken || data.token;
       localStorage.setItem("accessToken", token);
-      localStorage.setItem("refreshToken", data.refreshToken || "");
 
       // Also save to cookie so Next.js middleware can enforce auth server-side
       document.cookie = `accessToken=${token}; path=/; max-age=86400; SameSite=Lax`;

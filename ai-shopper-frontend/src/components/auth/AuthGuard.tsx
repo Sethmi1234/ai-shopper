@@ -29,7 +29,6 @@ export default function AuthGuard({ children }: { children: React.ReactNode }) {
       })
       .catch(() => {
         localStorage.removeItem("accessToken");
-        localStorage.removeItem("refreshToken");
         localStorage.removeItem("authData");
         localStorage.removeItem("userName");
         localStorage.removeItem("userEmail");
