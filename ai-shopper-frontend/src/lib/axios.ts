@@ -1,4 +1,5 @@
 import axios from "axios";
+import { encryptData, decryptData } from "./encryption";
 
 const api = axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000",
@@ -6,6 +7,7 @@ const api = axios.create({
   headers: {
     "Content-Type": "application/json",
   },
+  withCredentials: true,
 });
 
 // Flag to prevent multiple simultaneous refresh calls
@@ -26,38 +28,77 @@ const processQueue = (error: unknown, token: string | null = null) => {
   failedQueue = [];
 };
 
-// Request interceptor - attach access token
+// Request interceptor - attach access token and encrypt body
 api.interceptors.request.use(
-  (config) => {
+  async (config) => {
     if (typeof window !== "undefined") {
       const token = localStorage.getItem("accessToken");
       if (token) {
         config.headers.Authorization = `Bearer ${token}`;
       }
     }
+
+    // Encrypt payload if data exists and is a plain object
+    if (config.data && !(config.data instanceof FormData)) {
+      try {
+        const encrypted = await encryptData(config.data);
+        config.data = { payload: encrypted };
+      } catch (e) {
+        console.error("Encryption error:", e);
+      }
+    }
+
     return config;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor - handle 401 and auto-refresh
+// Response interceptor - decrypt body, handle 401 and auto-refresh
 api.interceptors.response.use(
-  (response) => response,
+  async (response) => {
+    if (response.data && response.data.payload) {
+      try {
+        const decrypted = await decryptData(response.data.payload);
+        response.data = decrypted;
+      } catch (e) {
+        console.error("Decryption error:", e);
+      }
+    }
+    return response;
+  },
   async (error) => {
+    // If there is an encrypted error payload, decrypt it for correct error message
+    if (error.response?.data?.payload) {
+      try {
+        const decryptedError = await decryptData(error.response.data.payload);
+        error.response.data = decryptedError;
+      } catch (e) {
+        // If decryption fails, keep the original error payload
+      }
+    }
+
     const originalRequest = error.config;
 
-    // If 401 and not already retried
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      // Don't try to refresh if the failing request was itself the refresh call
-      if (originalRequest.url === "/auth/refresh") {
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          localStorage.removeItem("user");
-        }
-        return Promise.reject(error);
-      }
+    // Auth endpoints should NEVER trigger a refresh — just reject directly
+    const isAuthEndpoint =
+      originalRequest.url === "/auth/login" ||
+      originalRequest.url === "/auth/register" ||
+      originalRequest.url === "/auth/refresh";
 
+    if (isAuthEndpoint) {
+      return Promise.reject(error);
+    }
+
+    // Only attempt token refresh if the user was previously logged in
+    const hasAccessToken =
+      typeof window !== "undefined" && !!localStorage.getItem("accessToken");
+
+    // If 401 and not already retried and user was logged in
+    if (
+      error.response?.status === 401 &&
+      !originalRequest._retry &&
+      hasAccessToken
+    ) {
       if (isRefreshing) {
         // Queue this request until the refresh completes
         return new Promise((resolve, reject) => {
@@ -73,29 +114,16 @@ api.interceptors.response.use(
       originalRequest._retry = true;
       isRefreshing = true;
 
-      const storedRefreshToken = typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null;
-
-      if (!storedRefreshToken) {
-        isRefreshing = false;
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
-          localStorage.removeItem("user");
-        }
-        return Promise.reject(error);
-      }
-
       try {
+        // refreshToken is sent automatically via HttpOnly cookie
         const { refreshToken: refresh } = await import(
           "../services/auth.service"
         );
-        const response = await refresh(storedRefreshToken);
+        const response = await refresh();
         const newAccessToken = response.accessToken;
-        const newRefreshToken = response.refreshToken;
 
         if (typeof window !== "undefined") {
           localStorage.setItem("accessToken", newAccessToken);
-          localStorage.setItem("refreshToken", newRefreshToken);
         }
 
         processQueue(null, newAccessToken);
@@ -106,7 +134,6 @@ api.interceptors.response.use(
         processQueue(refreshError, null);
         if (typeof window !== "undefined") {
           localStorage.removeItem("accessToken");
-          localStorage.removeItem("refreshToken");
           localStorage.removeItem("user");
         }
         return Promise.reject(refreshError);

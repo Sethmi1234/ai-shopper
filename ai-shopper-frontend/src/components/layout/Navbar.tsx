@@ -44,7 +44,6 @@ export default function Navbar() {
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
-    localStorage.removeItem("refreshToken");
     localStorage.removeItem("authData");
     document.cookie = "accessToken=; path=/; max-age=0";
     router.push("/login");

@@ -7,10 +7,22 @@ import {
   getCurrentUser,
 } from "../services/auth.service";
 
+const setRefreshTokenCookie = (res: Response, token?: string) => {
+  if (token) {
+    res.cookie("refreshToken", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+  }
+};
+
 // REGISTER
 export const register = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await registerUser(req.body);
+    setRefreshTokenCookie(res, result.refreshToken);
     res.status(201).json({
       message: "User created",
       user: result.user,
@@ -24,9 +36,9 @@ export const register = async (req: Request, res: Response, next: NextFunction) 
 export const login = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const result = await loginUser(req.body);
+    setRefreshTokenCookie(res, result.refreshToken);
     res.json({
       accessToken: result.accessToken,
-      refreshToken: result.refreshToken,
       user: result.user,
     });
   } catch (error: any) {
@@ -37,9 +49,12 @@ export const login = async (req: Request, res: Response, next: NextFunction) => 
 // REFRESH TOKEN
 export const refresh = async (req: Request, res: Response, next: NextFunction) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies.refreshToken;
     const result = await refreshUserToken(refreshToken);
-    res.json(result);
+    setRefreshTokenCookie(res, result.refreshToken);
+    res.json({
+      accessToken: result.accessToken,
+    });
   } catch (error: any) {
     next(error);
   }

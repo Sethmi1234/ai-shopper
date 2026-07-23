@@ -17,10 +17,8 @@ export const registerUser = async (data: {
   return res.data;
 };
 
-export const refreshToken = async (refreshToken: string) => {
-  const res = await api.post("/auth/refresh", {
-    refreshToken,
-  });
+export const refreshToken = async () => {
+  const res = await api.post("/auth/refresh");
   return res.data;
 };
 
