@@ -20,6 +20,10 @@ export const ALLOWED_CATEGORIES = [
   "sports-accessories",
   "womens-jewellery",
   "beauty",
+  "televisions",
+  "audio",
+  "gaming",
+  "headphones",
   "general",
 ];
 
@@ -50,6 +54,9 @@ export const CATEGORY_MAP: Record<string, string> = {
   milk: "groceries",
   egg: "groceries",
   eggs: "groceries",
+  ingredient: "groceries",
+  ingredients: "groceries",
+  hungry: "groceries",
 
   // Phones
   phone: "smartphones",
@@ -62,7 +69,7 @@ export const CATEGORY_MAP: Record<string, string> = {
   android: "smartphones",
   cell: "smartphones",
 
-  // Computers & Electronics
+  // Computers & Laptops
   laptop: "laptops",
   laptops: "laptops",
   computer: "laptops",
@@ -71,23 +78,36 @@ export const CATEGORY_MAP: Record<string, string> = {
   notebooks: "laptops",
   pc: "laptops",
   desktop: "laptops",
-  gaming: "laptops",
+  gaming: "gaming",
+
+  // Tablets
   tablet: "tablets",
   tablets: "tablets",
   ipad: "tablets",
-  tv: "tablets",
-  television: "tablets",
-  televisions: "tablets",
-  monitor: "tablets",
-  monitors: "tablets",
-  headphone: "sports-accessories",
-  headphones: "sports-accessories",
-  earphone: "sports-accessories",
-  earphones: "sports-accessories",
-  earbuds: "sports-accessories",
-  audio: "sports-accessories",
-  speaker: "sports-accessories",
-  speakers: "sports-accessories",
+
+  // Televisions & Monitors
+  tv: "televisions",
+  television: "televisions",
+  televisions: "televisions",
+  monitor: "televisions",
+  monitors: "televisions",
+  screen: "televisions",
+  display: "televisions",
+
+  // Audio
+  headphone: "headphones",
+  headphones: "headphones",
+  earphone: "headphones",
+  earphones: "headphones",
+  earbuds: "headphones",
+  earbud: "headphones",
+  audio: "audio",
+  speaker: "audio",
+  speakers: "audio",
+  sound: "audio",
+  music: "audio",
+
+  // Gadgets / Electronics (general)
   gadget: "smartphones",
   gadgets: "smartphones",
   electronics: "smartphones",
@@ -212,8 +232,9 @@ export const INTENT_CATEGORY_MAP: Record<string, string[]> = {
   groceries: ["groceries"],
   skincare: ["skin-care", "beauty"],
   fashion: ["tops", "womens-dresses", "mens-shirts", "mens-shoes", "womens-bags", "womens-jewellery"],
-  electronics: ["laptops", "smartphones", "tablets", "sports-accessories"],
+  electronics: ["laptops", "smartphones", "tablets", "headphones", "audio", "gaming"],
   gift: ["fragrances", "watches", "womens-jewellery", "womens-bags", "beauty"],
+  product_search: ["groceries", "smartphones", "laptops", "tops", "fragrances", "furniture", "skin-care", "sunglasses", "watches", "mens-shoes", "automotive", "home-decoration", "lighting", "motorcycle", "womens-bags", "womens-dresses", "mens-shirts", "tablets", "sports-accessories", "womens-jewellery", "beauty", "televisions", "audio", "gaming", "headphones"],
 };
 
 export const mapKeywordToCategory = (keyword: string): string => {
