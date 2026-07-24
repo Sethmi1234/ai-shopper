@@ -1,0 +1,15 @@
+AI streaming response error: APIUserAbortError: Request was aborted.
+    at OpenAI.makeRequest (C:\Users\asus\OneDrive\Desktop\shopper1\ai-shopper\ai-shopper-backend\node_modules\openai\src\client.ts:800:15)
+    at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+    at async streamShoppingAssistantResponse (C:\Users\asus\OneDrive\Desktop\shopper1\ai-shopper\ai-shopper-backend\src\services\ai.service.ts:235:20)
+    at async Socket.<anonymous> (C:\Users\asus\OneDrive\Desktop\shopper1\ai-shopper\ai-shopper-backend\src\socket\handlers\ai.handler.ts:64:22) {
+  status: undefined,
+  headers: undefined,
+  requestID: undefined,
+  error: undefined,
+  code: undefined,
+  param: undefined,
+  type: undefined
+}
+Port 5001 is in use, trying port 5002...
+Port 5001 is in use, trying port 5002...

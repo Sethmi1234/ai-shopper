@@ -35,6 +35,21 @@ export const CATEGORY_MAP: Record<string, string> = {
   drinks: "groceries",
   beverage: "groceries",
   beverages: "groceries",
+  eat: "groceries",
+  meal: "groceries",
+  meals: "groceries",
+  breakfast: "groceries",
+  lunch: "groceries",
+  dinner: "groceries",
+  fruit: "groceries",
+  fruits: "groceries",
+  vegetable: "groceries",
+  vegetables: "groceries",
+  rice: "groceries",
+  bread: "groceries",
+  milk: "groceries",
+  egg: "groceries",
+  eggs: "groceries",
 
   // Phones
   phone: "smartphones",
@@ -45,8 +60,9 @@ export const CATEGORY_MAP: Record<string, string> = {
   smartphones: "smartphones",
   iphone: "smartphones",
   android: "smartphones",
+  cell: "smartphones",
 
-  // Computers
+  // Computers & Electronics
   laptop: "laptops",
   laptops: "laptops",
   computer: "laptops",
@@ -55,8 +71,29 @@ export const CATEGORY_MAP: Record<string, string> = {
   notebooks: "laptops",
   pc: "laptops",
   desktop: "laptops",
+  gaming: "laptops",
+  tablet: "tablets",
+  tablets: "tablets",
+  ipad: "tablets",
+  tv: "tablets",
+  television: "tablets",
+  televisions: "tablets",
+  monitor: "tablets",
+  monitors: "tablets",
+  headphone: "sports-accessories",
+  headphones: "sports-accessories",
+  earphone: "sports-accessories",
+  earphones: "sports-accessories",
+  earbuds: "sports-accessories",
+  audio: "sports-accessories",
+  speaker: "sports-accessories",
+  speakers: "sports-accessories",
+  gadget: "smartphones",
+  gadgets: "smartphones",
+  electronics: "smartphones",
+  electronic: "smartphones",
 
-  // Clothing
+  // Clothing & Fashion
   shirt: "tops",
   shirts: "tops",
   tshirt: "tops",
@@ -65,6 +102,18 @@ export const CATEGORY_MAP: Record<string, string> = {
   tops: "tops",
   clothes: "tops",
   clothing: "tops",
+  fashion: "tops",
+  outfit: "tops",
+  outfits: "tops",
+  dress: "womens-dresses",
+  dresses: "womens-dresses",
+  bag: "womens-bags",
+  bags: "womens-bags",
+  handbag: "womens-bags",
+  jewellery: "womens-jewellery",
+  jewelry: "womens-jewellery",
+  necklace: "womens-jewellery",
+  "mens-shirt": "mens-shirts",
 
   // Fragrances
   perfume: "fragrances",
@@ -85,14 +134,23 @@ export const CATEGORY_MAP: Record<string, string> = {
   table: "furniture",
   tables: "furniture",
 
-  // Skincare
+  // Skincare & Beauty
   skincare: "skin-care",
+  "skin-care": "skin-care",
   "skin care": "skin-care",
-  beauty: "skin-care",
-  cream: "skin-care",
-  creams: "skin-care",
+  beauty: "beauty",
+  cream: "beauty",
+  creams: "beauty",
   lotion: "skin-care",
   lotions: "skin-care",
+  "face wash": "beauty",
+  facewash: "beauty",
+  cleanser: "beauty",
+  moisturizer: "skin-care",
+  serum: "skin-care",
+  makeup: "beauty",
+  lipstick: "beauty",
+  mascara: "beauty",
 
   // Eyewear
   sunglasses: "sunglasses",
@@ -135,23 +193,57 @@ export const CATEGORY_MAP: Record<string, string> = {
   motorcycle: "motorcycle",
   bike: "motorcycle",
 
-  // Toys & Games (mapped to closest categories)
-  toy: "automotive",
-  toys: "automotive",
-  game: "automotive",
-  games: "automotive",
-  play: "automotive",
-  child: "automotive",
-  children: "automotive",
-  kids: "automotive",
-  kid: "automotive",
-  baby: "automotive",
-  doll: "automotive",
-  puzzle: "automotive",
-  lego: "automotive",
+  // Sports
+  sport: "sports-accessories",
+  sports: "sports-accessories",
+  fitness: "sports-accessories",
+  gym: "sports-accessories",
+
+  // Gift (mapped to general for keyword lookup; intent handler picks multiple)
+  gift: "general",
+  gifts: "general",
+  present: "general",
+  presents: "general",
+};
+
+/** Map intent types to MongoDB category slugs */
+export const INTENT_CATEGORY_MAP: Record<string, string[]> = {
+  food: ["groceries"],
+  groceries: ["groceries"],
+  skincare: ["skin-care", "beauty"],
+  fashion: ["tops", "womens-dresses", "mens-shirts", "mens-shoes", "womens-bags", "womens-jewellery"],
+  electronics: ["laptops", "smartphones", "tablets", "sports-accessories"],
+  gift: ["fragrances", "watches", "womens-jewellery", "womens-bags", "beauty"],
 };
 
 export const mapKeywordToCategory = (keyword: string): string => {
   const normalized = keyword.toLowerCase().trim();
   return CATEGORY_MAP[normalized] || "general";
+};
+
+/** Map multi-word phrases in a message to categories */
+export const extractCategoriesFromMessage = (message: string): string[] => {
+  const text = message.toLowerCase();
+  const found = new Set<string>();
+
+  // Check multi-word phrases first
+  const phrases = ["face wash", "skin care", "home decoration", "t-shirts"];
+  for (const phrase of phrases) {
+    if (text.includes(phrase)) {
+      const cat = CATEGORY_MAP[phrase];
+      if (cat && cat !== "general") found.add(cat);
+    }
+  }
+
+  const words = text.replace(/[^a-z0-9\s-]/g, " ").split(/\s+/).filter(Boolean);
+  for (const word of words) {
+    const cat = mapKeywordToCategory(word);
+    if (cat !== "general") found.add(cat);
+  }
+
+  return [...found];
+};
+
+export const mapIntentToCategories = (intent: string): string[] => {
+  return INTENT_CATEGORY_MAP[intent] ?? [];
 };

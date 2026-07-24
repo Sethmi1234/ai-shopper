@@ -9,6 +9,7 @@ import cartRoutes from "./routes/cart.routes";
 import wishlistRoutes from "./routes/wishlist.routes";
 import orderRoutes from "./routes/order.routes";
 import aiRoutes from "./routes/ai.routes";
+import chatRoutes from "./routes/chat.routes";
 import productRoutes from "./routes/product.routes";
 
 import { decryptMiddleware } from "./middleware/decrypt.middleware";
@@ -30,7 +31,7 @@ app.use(limiter);
 
 app.use(
   cors({
-    origin: "http://localhost:3000",
+    origin: process.env.CORS_ORIGIN || "http://localhost:3000",
     credentials: true,
   })
 );
@@ -76,6 +77,11 @@ orderRoutes
 app.use(
 "/ai",
 aiRoutes
+);
+
+app.use(
+"/chat",
+chatRoutes
 );
 
 app.use(

@@ -1,0 +1,163 @@
+
+> ai-shopper-backend@1.0.0 dev
+> nodemon --exec tsx src/server.ts
+
+[33m[nodemon] 3.1.14[39m
+[33m[nodemon] to restart at any time, enter `rs`[39m
+[33m[nodemon] watching path(s): *.*[39m
+[33m[nodemon] watching extensions: ts,json[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+MongoDB connected successfully
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+MongoDB connected successfully
+Server running on port 5000
+Demo user already exists, skipping seed.
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ⌘ enable debugging { debug: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+MongoDB connected successfully
+Server running on port 5000
+Server running on port 5001
+Server running on port 5002
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ⌘ override existing { override: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+MongoDB connected successfully
+Server running on port 5000
+Server running on port 5001
+Server running on port 5002
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+MongoDB connected successfully
+Server running on port 5000
+Server running on port 5001
+Server running on port 5002
+[32m[nodemon] restarting due to changes...[39m
+Demo user already exists, skipping seed.
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ⌘ enable debugging { debug: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+MongoDB connected successfully
+Server running on port 5000
+Server running on port 5001
+Server running on port 5002
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+MongoDB connected successfully
+Server running on port 5000
+Server running on port 5001
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+MongoDB connected successfully
+Server running on port 5000
+Server running on port 5001
+Server running on port 5002
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ⌘ enable debugging { debug: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ override existing { override: true }
+MongoDB connected successfully
+Server running on port 5000
+Server running on port 5001
+Server running on port 5002
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+MongoDB connected successfully
+Server running on port 5000
+Server running on port 5001
+Server running on port 5002
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (11) from .env // tip: ⌘ override existing { override: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+MongoDB connected successfully
+Server running on port 5000
+Server running on port 5001
+Demo user already exists, skipping seed.

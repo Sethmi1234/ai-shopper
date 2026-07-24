@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
+import type { Socket } from "socket.io-client";
 import {
   BotMessageSquare,
   X,
@@ -19,6 +20,7 @@ import Image from "next/image";
 
 import useWishlist from "../../store/useWishlist";
 import useCart from "../../store/useCart";
+import { getConnectedSocket, getSocket } from "../../lib/socket";
 
 /* ─── Types ─────────────────────────────────────────────────────────────── */
 type ConversationTurn = {
@@ -58,6 +60,97 @@ const QUICK_PROMPTS = [
   "Food to eat now",
 ];
 
+const CHAT_STORAGE_KEY = "ai-shopper-chatbot-state-v1";
+const CHAT_SYNC_EVENT = "ai-shopper-chatbot-sync";
+
+type StoredChatState = {
+  isOpen: boolean;
+  messages: Message[];
+  conversationHistory: ConversationTurn[];
+  updatedAt: number;
+  sourceId: string;
+};
+
+const readStoredAccessToken = () => {
+  if (typeof window === "undefined") return null;
+
+  const token = localStorage.getItem("accessToken");
+  return token && token !== "undefined" && token !== "null" ? token : null;
+};
+
+const normalizeMessages = (value: unknown): Message[] => {
+  if (!Array.isArray(value)) return [WELCOME];
+
+  const messages = value
+    .filter((message) => {
+      if (!message || typeof message !== "object") return false;
+      const candidate = message as Partial<Message>;
+      return (
+        (candidate.role === "user" || candidate.role === "assistant") &&
+        typeof candidate.text === "string"
+      );
+    })
+    .map((message) => {
+      const candidate = message as Message;
+      return {
+        role: candidate.role,
+        text: candidate.text,
+        products: Array.isArray(candidate.products)
+          ? candidate.products.slice(0, 6).map((product) => ({
+              ...product,
+              id: String(product.id),
+            }))
+          : undefined,
+        isFollowUp: Boolean(candidate.isFollowUp),
+        isLoading: Boolean(candidate.isLoading),
+      };
+    })
+    .slice(-50);
+
+  return messages.length > 0 ? messages : [WELCOME];
+};
+
+const normalizeConversation = (value: unknown): ConversationTurn[] => {
+  if (!Array.isArray(value)) return [];
+
+  return value
+    .filter((turn) => {
+      if (!turn || typeof turn !== "object") return false;
+      const candidate = turn as Partial<ConversationTurn>;
+      return (
+        (candidate.role === "user" || candidate.role === "assistant") &&
+        typeof candidate.content === "string"
+      );
+    })
+    .map((turn) => ({
+      role: (turn as ConversationTurn).role,
+      content: (turn as ConversationTurn).content,
+    }))
+    .slice(-20);
+};
+
+const readStoredChatState = (): StoredChatState | null => {
+  if (typeof window === "undefined") return null;
+
+  try {
+    const raw = localStorage.getItem(CHAT_STORAGE_KEY);
+    if (!raw) return null;
+
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return null;
+
+    return {
+      isOpen: Boolean(parsed.isOpen),
+      messages: normalizeMessages(parsed.messages),
+      conversationHistory: normalizeConversation(parsed.conversationHistory),
+      updatedAt: Number(parsed.updatedAt) || 0,
+      sourceId: typeof parsed.sourceId === "string" ? parsed.sourceId : "",
+    };
+  } catch {
+    return null;
+  }
+};
+
 /* ─── Component ──────────────────────────────────────────────────────────── */
 export default function ChatBot() {
   const [isOpen, setIsOpen] = useState(false);
@@ -66,16 +159,30 @@ export default function ChatBot() {
   const [input, setInput] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [loadingStage, setLoadingStage] = useState<"thinking" | "searching" | "filtering">("thinking");
+  const [accessToken, setAccessToken] = useState<string | null>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const streamingTextRef = useRef("");
+  const sourceIdRef = useRef(
+    `chatbot-${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
+  const broadcastRef = useRef<BroadcastChannel | null>(null);
+  const hasLoadedStoredChatRef = useRef(false);
+  const suppressNextPersistRef = useRef(false);
+  const latestSyncedAtRef = useRef(0);
+  const attachedSocketRef = useRef<Socket | null>(null);
+  const socketHandlersRef = useRef<{
+    start: () => void;
+    chunk: (payload: { text: string }) => void;
+    done: (payload?: { reply?: string; products?: Product[] }) => void;
+    error: (payload?: { message?: string }) => void;
+    connectError: () => void;
+  } | null>(null);
   
   // Zustand stores for wishlist & cart (works without auth — stores locally)
-  const { toggleItem: wishlistToggle, isWishlisted, items: wishlistItems } = useWishlist();
+  const { toggleItem: wishlistToggle, isWishlisted } = useWishlist();
   const { addItem: cartAddItem } = useCart();
-  
-  // Helper functions
-  const isWishlistedCheck = (id: string) => isWishlisted(id);
   
   const handleWishlistToggle = (product: { id: string; title: string; price: number; thumbnail?: string; category?: string; rating?: number }) => {
     wishlistToggle({
@@ -98,26 +205,253 @@ export default function ChatBot() {
     }, 1);
   };
 
-  // Fallback response for general queries
-  const getFallbackResponse = (text: string) => {
-    const lowerText = text.toLowerCase();
-    
-    if (lowerText.includes("hello") || lowerText.includes("hi") || lowerText.includes("hey")) {
-      return "Hello! 👋 How can I help you find products today?";
+  const applySyncedState = useCallback((state: StoredChatState) => {
+    if (
+      state.sourceId === sourceIdRef.current ||
+      state.updatedAt < latestSyncedAtRef.current
+    ) {
+      return;
     }
-    if (lowerText.includes("thank")) {
-      return "You're welcome! Let me know if you need anything else.";
-    }
-    if (lowerText.includes("help")) {
-      return "I can help you find products! Try asking for specific items like 'laptops', 'skincare', 'food', or 'gifts'. You can also mention price ranges like 'under $100'.";
-    }
-    
-    return "I'm not sure what you're looking for. Could you be more specific? Try mentioning a product category like 'laptops', 'phones', 'skincare', or 'food'.";
-  };
+
+    latestSyncedAtRef.current = state.updatedAt;
+    suppressNextPersistRef.current = true;
+    setIsOpen(state.isOpen);
+    setMessages(normalizeMessages(state.messages));
+    setConversationHistory(normalizeConversation(state.conversationHistory));
+  }, []);
 
   useEffect(() => {
-    if (isOpen) setTimeout(() => inputRef.current?.focus(), 300);
+    const stored = readStoredChatState();
+
+    if (stored) {
+      latestSyncedAtRef.current = stored.updatedAt;
+      setIsOpen(stored.isOpen);
+      setMessages(stored.messages);
+      setConversationHistory(stored.conversationHistory);
+    }
+
+    hasLoadedStoredChatRef.current = true;
+
+    if ("BroadcastChannel" in window) {
+      broadcastRef.current = new BroadcastChannel(CHAT_SYNC_EVENT);
+      broadcastRef.current.onmessage = (event) => {
+        if (event.data?.type === CHAT_SYNC_EVENT && event.data.state) {
+          applySyncedState(event.data.state);
+        }
+      };
+    }
+
+    const handleStorage = (event: StorageEvent) => {
+      if (event.key !== CHAT_STORAGE_KEY || !event.newValue) return;
+
+      try {
+        const parsed = JSON.parse(event.newValue);
+        applySyncedState({
+          isOpen: Boolean(parsed.isOpen),
+          messages: normalizeMessages(parsed.messages),
+          conversationHistory: normalizeConversation(parsed.conversationHistory),
+          updatedAt: Number(parsed.updatedAt) || Date.now(),
+          sourceId: typeof parsed.sourceId === "string" ? parsed.sourceId : "",
+        });
+      } catch {
+        // Ignore malformed cross-tab updates.
+      }
+    };
+
+    window.addEventListener("storage", handleStorage);
+
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      broadcastRef.current?.close();
+      broadcastRef.current = null;
+    };
+  }, [applySyncedState]);
+
+  useEffect(() => {
+    if (!hasLoadedStoredChatRef.current) return;
+
+    if (suppressNextPersistRef.current) {
+      suppressNextPersistRef.current = false;
+      return;
+    }
+
+    const state: StoredChatState = {
+      isOpen,
+      messages: normalizeMessages(messages),
+      conversationHistory: normalizeConversation(conversationHistory),
+      updatedAt: Date.now(),
+      sourceId: sourceIdRef.current,
+    };
+
+    latestSyncedAtRef.current = state.updatedAt;
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(state));
+    broadcastRef.current?.postMessage({
+      type: CHAT_SYNC_EVENT,
+      state,
+    });
+  }, [conversationHistory, isOpen, messages]);
+
+  const attachAiSocketListeners = useCallback((socket: Socket) => {
+    if (attachedSocketRef.current === socket) return;
+
+    if (attachedSocketRef.current && socketHandlersRef.current) {
+      const previous = attachedSocketRef.current;
+      previous.off("ai:start", socketHandlersRef.current.start);
+      previous.off("ai:chunk", socketHandlersRef.current.chunk);
+      previous.off("ai:done", socketHandlersRef.current.done);
+      previous.off("ai:error", socketHandlersRef.current.error);
+      previous.off("connect_error", socketHandlersRef.current.connectError);
+    }
+
+    const updateStreamingMessage = (updates: Partial<Message>) => {
+      setMessages((prev) => {
+        const next = [...prev];
+        const index = next.length - 1;
+
+        if (index < 0 || next[index].role !== "assistant") {
+          return [...next, { role: "assistant", text: "", ...updates }];
+        }
+
+        next[index] = { ...next[index], ...updates };
+        return next;
+      });
+    };
+
+    const handleStart = () => {
+      streamingTextRef.current = "";
+      setIsLoading(true);
+      setLoadingStage("thinking");
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", text: "", isLoading: true },
+      ]);
+    };
+
+    const handleChunk = ({ text }: { text: string }) => {
+      streamingTextRef.current += text;
+      updateStreamingMessage({
+        text: streamingTextRef.current,
+        isLoading: false,
+      });
+    };
+
+    const handleDone = ({
+      reply,
+      products,
+    }: {
+      reply?: string;
+      products?: Product[];
+    } = {}) => {
+      const finalReply = (streamingTextRef.current || reply || "").trim();
+      const safeReply =
+        finalReply || "How can I help you find the right product today?";
+      const safeProducts = Array.isArray(products)
+        ? products.map((product) => ({
+            ...product,
+            id: String(product.id),
+          }))
+        : [];
+
+      updateStreamingMessage({
+        text: safeReply,
+        products:
+          safeProducts.length > 0 && finalReply.length > 0
+            ? safeProducts.slice(0, 6)
+            : undefined,
+        isLoading: false,
+      });
+
+      setConversationHistory((prev) => [
+        ...prev,
+        { role: "assistant", content: safeReply },
+      ]);
+      setIsLoading(false);
+      setLoadingStage("thinking");
+      streamingTextRef.current = "";
+    };
+
+    const handleError = ({ message }: { message?: string } = {}) => {
+      const errorText = message || "Something went wrong with the AI response.";
+
+      setMessages((prev) => {
+        const next = [...prev];
+        const index = next.length - 1;
+
+        if (index >= 0 && next[index].role === "assistant" && next[index].isLoading) {
+          next[index] = {
+            role: "assistant",
+            text: errorText,
+            isLoading: false,
+          };
+          return next;
+        }
+
+        return [...next, { role: "assistant", text: errorText }];
+      });
+
+      setIsLoading(false);
+      setLoadingStage("thinking");
+      streamingTextRef.current = "";
+    };
+
+    const handleConnectError = () => {
+      handleError({ message: "Please log in again to use the AI assistant." });
+    };
+
+    const handlers = {
+      start: handleStart,
+      chunk: handleChunk,
+      done: handleDone,
+      error: handleError,
+      connectError: handleConnectError,
+    };
+
+    socket.on("ai:start", handlers.start);
+    socket.on("ai:chunk", handlers.chunk);
+    socket.on("ai:done", handlers.done);
+    socket.on("ai:error", handlers.error);
+    socket.on("connect_error", handlers.connectError);
+
+    attachedSocketRef.current = socket;
+    socketHandlersRef.current = handlers;
+  }, []);
+
+  useEffect(() => {
+    if (isOpen) {
+      setAccessToken(readStoredAccessToken());
+      setTimeout(() => inputRef.current?.focus(), 300);
+    }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const syncToken = () => setAccessToken(readStoredAccessToken());
+
+    syncToken();
+    window.addEventListener("storage", syncToken);
+
+    return () => window.removeEventListener("storage", syncToken);
+  }, []);
+
+  useEffect(() => {
+    if (!accessToken) return;
+
+    const socket = getSocket(accessToken);
+    attachAiSocketListeners(socket);
+  }, [accessToken, attachAiSocketListeners]);
+
+  useEffect(() => (
+    () => {
+      if (attachedSocketRef.current && socketHandlersRef.current) {
+        attachedSocketRef.current.off("ai:start", socketHandlersRef.current.start);
+        attachedSocketRef.current.off("ai:chunk", socketHandlersRef.current.chunk);
+        attachedSocketRef.current.off("ai:done", socketHandlersRef.current.done);
+        attachedSocketRef.current.off("ai:error", socketHandlersRef.current.error);
+        attachedSocketRef.current.off("connect_error", socketHandlersRef.current.connectError);
+      }
+    }
+  ), []);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -127,6 +461,8 @@ export default function ChatBot() {
     setMessages([WELCOME]);
     setConversationHistory([]);
     setInput("");
+    setIsLoading(false);
+    streamingTextRef.current = "";
   };
 
   const handleSend = async (overrideText?: string) => {
@@ -146,61 +482,19 @@ export default function ChatBot() {
     ];
     setConversationHistory(updatedHistory);
 
-    setIsLoading(true);
-    setLoadingStage("thinking");
-
     try {
-      // Build conversation context
-      const conversationContext = conversationHistory
-        .slice(-6) // Keep last few turns
-        .map((m) => `${m.role === "user" ? "User" : "AI"}: ${m.content}`)
-        .join("\n");
+      const connection = await getConnectedSocket(accessToken);
+      attachAiSocketListeners(connection.socket);
 
-      // Ask the backend to classify the request and fetch matching products
-      // from our own MongoDB catalog.
-      const recommendResponse = await fetch("/api/ai/recommend", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text, conversationHistory }),
-      });
-
-      if (!recommendResponse.ok) {
-        const errText = await recommendResponse.text();
-        console.error(`AI recommend error ${recommendResponse.status}:`, errText);
-        throw Object.assign(new Error("Request failed"), { status: recommendResponse.status });
+      if (connection.accessToken !== accessToken) {
+        setAccessToken(connection.accessToken);
       }
 
-      const recommendData = await recommendResponse.json();
-      const decision = recommendData.data || recommendData;
-      const products: Product[] = Array.isArray(decision.products)
-        ? decision.products.map((product: any) => ({
-            ...product,
-            id: String(product.id || product._id),
-          }))
-        : [];
-      const reply =
-        typeof decision.reply === "string" && decision.reply.trim()
-          ? decision.reply
-          : products.length > 0
-          ? `I found ${products.length} product${products.length !== 1 ? "s" : ""} for you!`
-          : getFallbackResponse(text);
-      let isFollowUp = false;
-      setLoadingStage("filtering");
-
-      const assistantMsg: Message = {
-        role: "assistant",
-        text: reply,
-        products: products.length > 0 ? products.slice(0, 6) : undefined,
-        isFollowUp,
-      };
-
-      setMessages((prev) => [...prev, assistantMsg]);
-
-      // Update conversation history with AI reply
-      setConversationHistory((prev) => [
-        ...prev,
-        { role: "assistant", content: reply },
-      ]);
+      const socket = connection.socket;
+      socket.emit("ai:message", {
+        message: text,
+        conversationHistory: updatedHistory,
+      });
     } catch (err: any) {
       console.error("ChatBot error:", err);
 
@@ -225,7 +519,6 @@ export default function ChatBot() {
           text: errorText,
         },
       ]);
-    } finally {
       setIsLoading(false);
       setLoadingStage("thinking");
     }
@@ -245,6 +538,9 @@ export default function ChatBot() {
       : loadingStage === "searching"
       ? "Searching products..."
       : "AI is filtering results...";
+  const lastMessage = messages[messages.length - 1];
+  const hasPendingAssistant =
+    lastMessage?.role === "assistant" && Boolean(lastMessage.isLoading);
 
   /* ─── Render ──────────────────────────────────────────────────────────── */
   return (
@@ -339,7 +635,7 @@ export default function ChatBot() {
                         : "bg-white text-gray-800 border border-gray-100 shadow-sm rounded-tl-sm"
                     }`}
                   >
-                    {msg.text}
+                    {msg.isLoading && !msg.text ? loadingLabel : msg.text}
                     {msg.isFollowUp && (
                       <p className="mt-1.5 text-[10px] font-bold uppercase tracking-widest text-gray-400">
                         ↳ AI needs more info
@@ -462,7 +758,7 @@ export default function ChatBot() {
             ))}
 
             {/* Loading indicator */}
-            {isLoading && (
+            {isLoading && !hasPendingAssistant && (
               <div className="flex gap-2.5">
                 <div className="w-7 h-7 rounded-full bg-gray-200 text-gray-600 flex items-center justify-center shrink-0">
                   <Sparkles size={13} />
