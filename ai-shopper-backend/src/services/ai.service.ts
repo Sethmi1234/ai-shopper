@@ -58,7 +58,7 @@ export interface StreamingShoppingAssistantResult {
 }
 
 /**
- * Call NVIDIA AI with a prompt
+ * Call NVIDIA AI with a prompt - with improved error handling
  */
 export const callNvidiaAI = async ({
   model,
@@ -100,8 +100,20 @@ export const callNvidiaAI = async ({
       // If not JSON, return as plain text in reply
       return { reply: content };
     }
-  } catch (error) {
-    console.error("NVIDIA AI call error:", error);
+  } catch (error: any) {
+    console.error("NVIDIA AI call error:", error?.message || error);
+    
+    // Check for specific error types
+    if (error?.status === 429) {
+      return { error: "Rate limit exceeded. Please wait a moment.", success: false };
+    }
+    if (error?.status === 401 || error?.status === 403) {
+      return { error: "AI service authentication failed.", success: false };
+    }
+    if (error?.code === "ECONNREFUSED" || error?.code === "ENOTFOUND") {
+      return { error: "AI service is unreachable.", success: false };
+    }
+    
     return { error: "AI request failed", success: false };
   }
 };

@@ -82,28 +82,32 @@ Analyze the customer's latest message in context and classify their intent.
 SUPPORTED INTENTS (return exactly one):
 greeting, goodbye, thanks, help, small_talk, product_search, recommendation, product_compare, food, skincare, fashion, electronics, groceries, gift, follow_up, order_question, unknown
 
-RULES:
-- "Hi", "Hello" → greeting
-- "Bye", "Goodbye" → goodbye
-- "Thanks", "Thank you" → thanks
-- "Help", "What can you do" → help
-- General chat not about shopping → small_talk
-- Looking for specific products → product_search
-- "What should I buy", "Suggest something" → recommendation
+CLASSIFICATION RULES:
+- "Hi", "Hello", "Hey", "Good morning" → greeting
+- "Bye", "Goodbye", "See you" → goodbye
+- "Thanks", "Thank you", "Thx" → thanks
+- "Help", "What can you do", "How does this work" → help
+- General chat not about shopping (weather, hobbies, etc.) → small_talk
+- Looking for specific products with details → product_search
+- "What should I buy", "Suggest something", "Recommend" → recommendation
 - "Compare X and Y" → product_compare
-- Food, meals, snacks, what to eat → food (NOT kitchen equipment)
-- Skincare, beauty, cream, face wash → skincare
-- Clothes, outfits, fashion → fashion
-- Laptops, phones, gadgets, TVs → electronics
-- Grocery items → groceries
-- Gift ideas → gift
-- Short replies referencing prior context ("cheaper ones", "show more", "$1000") → follow_up
-- Order status, shipping, returns → order_question
-- Unclear intent → unknown
+- Food, meals, snacks, what to eat, hungry → food (NEVER recommend kitchen equipment or cookware)
+- Skincare, beauty, cream, face wash, moisturizer → skincare
+- Clothes, outfits, fashion, what to wear → fashion
+- Laptops, phones, gadgets, TVs, electronics → electronics
+- Grocery items, ingredients, produce → groceries
+- Gift ideas, presents for someone → gift
+- Short replies referencing prior context ("cheaper ones", "show more", "around $1000") → follow_up
+- Order status, shipping, returns, my orders → order_question
+- Unclear intent or completely unrelated → unknown
 
-For follow_up, use conversation history to understand what the user refers to.
+CRITICAL CONTEXT RULES:
+- For "follow_up" intent: use conversation history to understand what the user is referring to. If they mention "cheaper", "more", "those", "that one", "show me", "under $X", "around $X" and there is a prior conversation, classify as follow_up.
+- If user says "What should I eat today?" → food (NOT groceries, NOT product_search)
+- If user says "Thanks" or "Thank you" → thanks (do NOT search products)
+- If user just says "$1000" and prior context mentions laptops → follow_up with laptop category
 
-Return ONLY valid JSON:
+Return ONLY valid JSON. No markdown. No explanation.
 {
   "intent": "intent_name",
   "confidence": 0.0-1.0,
@@ -253,45 +257,74 @@ export const getStaticResponse = (handler: HandlerType, userName?: string): stri
 
   switch (handler) {
     case "greeting":
-      return `Hello${name}! 👋 I'm your AI shopping assistant. I can help you find products, compare options, and give personalized recommendations. What are you looking for today?`;
+      return `Hello${name}! 👋 Welcome to AI Shopper! I'm your personal shopping assistant. I can help you find the perfect products, compare options, and give personalized recommendations. What are you looking for today?`;
     case "goodbye":
-      return "Goodbye! Feel free to come back anytime you need shopping help. Happy shopping! 🛍️";
+      return `Goodbye${name}! Thanks for visiting AI Shopper. Feel free to come back anytime you need shopping help. Have a great day! 🛍️`;
     case "thanks":
-      return "You're welcome! Let me know if you'd like help finding anything else.";
+      return "You're very welcome! 😊 I'm happy I could help. Let me know if you'd like help finding anything else — I'm always here to assist!";
     case "help":
-      return `I'm here to help you shop smarter! I can:\n\n• Find products by category, brand, or budget\n• Recommend gifts and everyday essentials\n• Compare options and explain why they fit\n• Answer questions about browsing, cart, and wishlist\n\nJust tell me what you're looking for — for example, "gaming laptop under $1000" or "skincare for dry skin".`;
+      return `I'm here to help you shop smarter! Here's what I can do:\n\n🛒 **Find Products** — Just tell me what you need (e.g., "gaming laptop under $1000")\n🎁 **Gift Ideas** — Ask for gift recommendations (e.g., "gift for mom")\n🔍 **Compare Options** — I can explain why products fit your needs\n🍎 **Food & Groceries** — Looking for a meal? Just say "What should I eat?"\n💄 **Skincare & Beauty** — Ask for skincare or beauty products\n👗 **Fashion** — Find clothes, shoes, and accessories\n\nGo ahead and tell me what you're shopping for!`;
     default:
       return null;
   }
 };
 
-export const buildSystemPrompt = (hasProducts: boolean): string => {
-  return `You are a professional, friendly AI shopping assistant for AI Shopper — an ecommerce store.
+export const buildSystemPrompt = (hasProducts: boolean, productContext?: string): string => {
+  return `You are AI Shopper — a professional, friendly, and intelligent conversational shopping assistant for an ecommerce store.
 
-PERSONALITY:
-- Warm, conversational, and helpful — like a knowledgeable store associate
-- Concise but not robotic (2-5 sentences unless recommending products)
-- Ask ONE follow-up question when key info is missing (budget, use case, preferences)
+## YOUR PERSONALITY
+- Warm, natural, and conversational — like a knowledgeable boutique store associate
+- Be concise but not robotic: use 2-4 sentences for general responses, 3-6 sentences when recommending products
+- Be enthusiastic about helping the customer find what they're looking for
+- Ask ONE relevant follow-up question when important information is missing (e.g., budget, use case, preferences, occasion)
+- Use natural language — don't sound like a robot reading a spec sheet
 
-STRICT RULES:
-- NEVER invent or hallucinate products — only mention products from the provided candidate list
-- NEVER recommend products unless the user is asking for products or recommendations
-- When recommending, explain WHY each product fits (budget, rating, brand, use case, stock)
-- Use bullet points with ✔ for product reasons when listing recommendations
-- Keep category recommendations relevant — do NOT suggest kitchen equipment when user asks about food to eat
-- For food/food intent: only suggest groceries and edible items
-- If no products match, apologize warmly and suggest alternatives or ask to adjust budget/category
-- Do NOT output JSON, markdown code blocks, or internal system details
-- Do NOT expose API keys, database info, or technical implementation details
+## CRITICAL RULES — YOU MUST FOLLOW THESE
+1. 🚫 NEVER invent or hallucinate products — ONLY recommend products from the provided candidate list
+2. 🚫 NEVER recommend products unless the user is explicitly asking for products or recommendations
+3. 🚫 NEVER expose internal system details, API keys, database queries, stack traces, or technical implementation
+4. 🚫 NEVER recommend unrelated categories — if the user asks about food, do NOT recommend kitchen equipment or cookware
+5. ✅ When recommending products, ALWAYS explain WHY each product fits (budget, rating, brand, use case, stock availability)
+6. ✅ Use bullet points with checkmarks (✔) when listing product recommendations
+7. ✅ For food/food intent: ONLY suggest groceries and edible items — never kitchen tools, cookware, or appliances
+8. ✅ Keep category recommendations strictly relevant to what the user asked for
+
+## PRODUCT RECOMMENDATION FORMAT
+When recommending from the candidate list, use this natural format:
+
+"I found some great options that match what you're looking for:"
+
+• **[Product Name]** — $[Price]
+  ✔ Fits your budget (under $[budget])
+  ✔ [Rating]/5 rating — highly rated by customers
+  ✔ [Specific reason based on product attributes]
+  ✔ Available in stock
+
+[1-2 sentences of additional helpful context or a follow-up question]
+
+## HANDLING NO RESULTS
+If no exact matches were found:
+1. Apologize warmly: "I'm sorry, I couldn't find an exact match for [what they asked for]."
+2. Present alternatives: "However, here are some similar products you might like:"
+3. Offer to adjust: "Would you like to try a different category, increase your budget, or look at something else?"
+
+## CATEGORY GUIDANCE
+- User asks about "food", "eat", "meal", "snack", "breakfast", "lunch", "dinner", "hungry" → ONLY groceries/edible items
+- User asks about "skincare", "skin", "face", "beauty", "cream" → skincare and beauty categories
+- User asks about "laptop", "computer", "phone", "gadgets" → electronics categories
+- User asks about "clothes", "fashion", "outfit" → fashion/clothing categories
+- User asks about "gift", "present" → gift-appropriate categories
+- User asks about "TV", "television" → televisions category
+- User asks about "headphones", "earphones", "audio", "speaker" → headphones or audio category
 
 ${hasProducts
-    ? `PRODUCT RECOMMENDATION FORMAT:
-When recommending products from the candidate list, briefly introduce them then explain why each fits:
-"Here are my top picks for you:"
-- Product Name — ✔ Fits your budget ✔ High rating ✔ [specific reason]
-Keep it natural and conversational.`
-    : `NO PRODUCTS AVAILABLE:
-Apologize that you couldn't find an exact match. Suggest broadening the search, adjusting budget, or trying a related category. Ask one helpful clarifying question.`}`;
+    ? `## AVAILABLE PRODUCTS
+The following products are available from our catalog. ONLY recommend from this list:
+${productContext || "Products available in the selected category."}`
+    : `## NO PRODUCTS AVAILABLE
+No matching products were found. Apologize warmly, suggest broadening the search, adjusting budget, or trying a related category. Ask one helpful clarifying question. NEVER invent products.`}
+
+Remember: You are a helpful shopping assistant having a natural conversation. Be warm, be helpful, and never make up products.`;
 };
 
 export const streamAIResponse = async ({
@@ -325,22 +358,31 @@ export const streamAIResponse = async ({
 
   let reply = "";
 
-  const stream = await aiClient.chat.completions.create(
-    {
-      model: MODEL,
-      messages: messages as any,
-      temperature: 0.5,
-      max_tokens: 800,
-      stream: true,
-    },
-    signal ? { signal } : undefined
-  );
+  try {
+    const stream = await aiClient.chat.completions.create(
+      {
+        model: MODEL,
+        messages: messages as any,
+        temperature: 0.5,
+        max_tokens: 800,
+        stream: true,
+      },
+      signal ? { signal } : undefined
+    );
 
-  for await (const chunk of stream as any) {
-    const token = chunk.choices?.[0]?.delta?.content;
-    if (typeof token === "string" && token.length > 0) {
-      reply += token;
-      onToken(token);
+    for await (const chunk of stream as any) {
+      const token = chunk.choices?.[0]?.delta?.content;
+      if (typeof token === "string" && token.length > 0) {
+        reply += token;
+        onToken(token);
+      }
+    }
+  } catch (error) {
+    console.error("AI stream error:", error);
+    if (!reply.trim()) {
+      const errorMsg = "I'm having trouble connecting to the AI service. Please try again in a few moments.";
+      onToken(errorMsg);
+      reply = errorMsg;
     }
   }
 

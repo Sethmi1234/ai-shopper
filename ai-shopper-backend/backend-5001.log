@@ -142,3 +142,134 @@ MongoDB connected successfully
 Server running on port 5001
 Server running on port 5002
 Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+MongoDB connected successfully
+Server running on port 5001
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+MongoDB connected successfully
+Server running on port 5001
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ override existing { override: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ◈ encrypted .env [www.dotenvx.com]
+MongoDB connected successfully
+Server running on port 5001
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+MongoDB connected successfully
+Server running on port 5001
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+[31m[nodemon] app crashed - waiting for file changes before starting...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+MongoDB connected successfully
+Server running on port 5001
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+MongoDB connected successfully
+Server running on port 5001
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ◈ secrets for agents [www.dotenvx.com]
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+MongoDB connected successfully
+Server running on port 5001
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ suppress logs { quiet: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ enable debugging { debug: true }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+MongoDB connected successfully
+Server running on port 5001
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ enable debugging { debug: true }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+MongoDB connected successfully
+Server running on port 5001
+Demo user already exists, skipping seed.
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+◇ injected env (0) from .env // tip: ⌘ custom filepath { path: '/custom/path/.env' }
+[32m[nodemon] restarting due to changes...[39m
+[32m[nodemon] starting `tsx src/server.ts`[39m
+◇ injected env (10) from .env // tip: ⌘ multiple files { path: ['.env.local', '.env'] }
+✅ NVIDIA_API_KEY loaded successfully
+◇ injected env (0) from .env // tip: ⌁ auth for agents [www.vestauth.com]
+◇ injected env (0) from .env // tip: ⌘ suppress logs { quiet: true }
+MongoDB connected successfully
+Server running on port 5001
+Server running on port 5002
+Server running on port 5003
+Server running on port 5004
+Server running on port 5005
+Server running on port 5006
+Server running on port 5007
+Server running on port 5008
+Server running on port 5009
+Server running on port 5010
+Demo user already exists, skipping seed.

@@ -137,7 +137,9 @@ const buildProductReasons = (product: any, classification: IntentClassification)
     reasons.push("Within your price range");
   }
 
-  if (product.rating && product.rating >= 4) {
+  if (product.rating && product.rating >= 4.5) {
+    reasons.push("Top rated ⭐");
+  } else if (product.rating && product.rating >= 4) {
     reasons.push("High rating");
   } else if (product.rating && product.rating >= 3.5) {
     reasons.push("Well rated");
@@ -149,6 +151,10 @@ const buildProductReasons = (product: any, classification: IntentClassification)
 
   if (product.brand) {
     reasons.push(`${product.brand} brand`);
+  }
+
+  if (product.discountPercentage && product.discountPercentage > 10) {
+    reasons.push(`${Math.round(product.discountPercentage)}% off — great deal!`);
   }
 
   if (reasons.length === 0) {
@@ -286,7 +292,7 @@ const generateSuggestions = (
   const category = products[0]?.category;
   const suggestions: string[] = ["Compare these", "Show cheaper options"];
 
-  if (category === "laptops") {
+  if (category === "laptops" || category === "gaming") {
     suggestions.push("Gaming laptops", "Business laptops", "Best battery life");
   } else if (category === "groceries") {
     suggestions.push("Healthy snacks", "Breakfast ideas", "Show more options");
@@ -294,6 +300,16 @@ const generateSuggestions = (
     suggestions.push("For dry skin", "Under $30", "Top rated skincare");
   } else if (category === "smartphones") {
     suggestions.push("Best camera phones", "Budget phones", "Compare these");
+  } else if (category === "televisions") {
+    suggestions.push("4K TVs", "Under $500", "Smart TVs");
+  } else if (category === "headphones" || category === "audio") {
+    suggestions.push("Wireless headphones", "Under $100", "Noise cancelling");
+  } else if (category === "furniture") {
+    suggestions.push("Office chairs", "Desks", "Living room");
+  } else if (category === "fragrances") {
+    suggestions.push("For men", "For women", "Under $50");
+  } else if (category === "fashion" || category === "tops" || category === "womens-dresses" || category === "mens-shirts") {
+    suggestions.push("Summer collection", "Under $50", "Top rated");
   } else {
     suggestions.push("Show more like these", "Best rated", "Different brand");
   }
@@ -303,7 +319,7 @@ const generateSuggestions = (
 
 const buildNoResultsContext = (products: any[], categories: string[]): string => {
   if (products.length > 0) {
-    return `No exact matches were found, but here are similar products from the store:\n${JSON.stringify(
+    return `No exact matches were found, but here are similar products from the store that the customer might like:\n${JSON.stringify(
       products.map((p) => ({
         id: String(p._id || p.id),
         title: p.title,
@@ -311,13 +327,15 @@ const buildNoResultsContext = (products: any[], categories: string[]): string =>
         category: p.category,
         rating: p.rating,
         brand: p.brand,
+        stock: p.stock,
+        description: p.description?.substring(0, 120),
       })),
       null,
       2
     )}`;
   }
 
-  return `No matching products were found in categories: ${categories.join(", ") || "any"}. Apologize warmly, suggest adjusting budget or trying a related category, and ask one clarifying question. Do NOT invent products.`;
+  return `No matching products were found in categories: ${categories.join(", ") || "any"}. Apologize warmly, suggest adjusting budget or trying a related category, and ask one helpful clarifying question. Do NOT invent products.`;
 };
 
 const buildProductContext = (products: any[]): string => {
@@ -330,6 +348,7 @@ const buildProductContext = (products: any[]): string => {
       rating: p.rating,
       brand: p.brand,
       stock: p.stock,
+      discountPercentage: p.discountPercentage,
       description: p.description?.substring(0, 120),
     })),
     null,
@@ -404,7 +423,7 @@ export const processChatMessage = async (
       }
 
       reply = await streamAIResponse({
-        systemPrompt: buildSystemPrompt(rawProducts.length > 0),
+        systemPrompt: buildSystemPrompt(rawProducts.length > 0, productContext),
         conversationHistory: historyForClassification,
         userMessage: message,
         productContext,
