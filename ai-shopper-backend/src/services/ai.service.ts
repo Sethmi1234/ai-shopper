@@ -27,6 +27,34 @@ export interface AIResponse {
   success?: boolean;
   fallback?: boolean;
   products?: any[];
+  categories?: string[];
+  searchTerms?: string;
+  budget?: { min?: number; max?: number };
+}
+
+export interface ConversationTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface StreamingShoppingAssistantInput {
+  message: string;
+  conversationHistory?: ConversationTurn[];
+  onToken: (token: string) => void;
+}
+
+export interface StreamingShoppingAssistantResult {
+  reply: string;
+  products: Array<{
+    id: string;
+    title: string;
+    price: number;
+    category?: string;
+    thumbnail?: string;
+    rating?: number;
+    brand?: string;
+    description?: string;
+  }>;
 }
 
 /**
@@ -75,6 +103,96 @@ export const callNvidiaAI = async ({
   } catch (error) {
     console.error("NVIDIA AI call error:", error);
     return { error: "AI request failed", success: false };
+  }
+};
+
+// This function is deprecated - use streamShoppingAssistantResponse from chatService.ts instead
+export const streamShoppingAssistantResponse = async ({
+  message,
+  conversationHistory = [],
+  onToken,
+}: StreamingShoppingAssistantInput): Promise<StreamingShoppingAssistantResult> => {
+  // This is a fallback implementation - the main implementation is in chatService.ts
+  // This is kept for backward compatibility but should not be used in new code
+  console.warn("streamShoppingAssistantResponse from ai.service.ts is deprecated. Use chatService instead.");
+  
+  try {
+    const recentHistory = conversationHistory
+      .filter((turn) => (
+        (turn.role === "user" || turn.role === "assistant") &&
+        typeof turn.content === "string" &&
+        turn.content.trim().length > 0
+      ))
+      .slice(-8);
+
+    const messages: any[] = [
+      {
+        role: "system",
+        content: `You are a helpful ecommerce shopping assistant for AI Shopper.
+
+Rules:
+- Keep responses concise, friendly, and useful (2-4 sentences).
+- For greetings or general chat, respond warmly and ask what they are looking for. Do not invent products.
+- Do not output JSON.`,
+      },
+      ...recentHistory.map((turn) => ({
+        role: turn.role,
+        content: turn.content,
+      })),
+      {
+        role: "user",
+        content: message,
+      },
+    ];
+
+    let reply = "";
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 25000);
+
+    try {
+      const stream = await aiClient.chat.completions.create(
+        {
+          model: MODEL,
+          messages,
+          temperature: 0.4,
+          max_tokens: 700,
+          stream: true,
+        },
+        {
+          signal: controller.signal,
+        }
+      );
+
+      for await (const chunk of stream as any) {
+        const token = chunk.choices?.[0]?.delta?.content;
+        if (typeof token === "string" && token.length > 0) {
+          reply += token;
+          onToken(token);
+        }
+      }
+    } catch (error) {
+      console.error("AI streaming response error:", error);
+
+      if (!reply.trim()) {
+        reply = "I'm having trouble connecting to the AI service. Please try again in a few moments.";
+        onToken(reply);
+      }
+    } finally {
+      clearTimeout(timeout);
+    }
+
+    const finalReply = reply.trim() || "How can I help you find the right product today?";
+
+    return {
+      reply: finalReply,
+      products: [],
+    };
+  } catch (error) {
+    console.error("streamShoppingAssistantResponse error:", error);
+    return {
+      reply: "I'm having trouble connecting to the AI service. Please try again in a few moments.",
+      products: [],
+    };
   }
 };
 

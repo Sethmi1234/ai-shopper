@@ -1,0 +1,15 @@
+
+> ai-shopper@0.1.0 dev
+> next dev -p 3002
+
+  ▲ Next.js 14.2.5
+  - Local:        http://localhost:3002
+  - Environments: .env.local
+
+ ✓ Starting...
+ ✓ Ready in 5.4s
+ ○ Compiling / ...
+ ✓ Compiled / in 1917ms (578 modules)
+ GET / 200 in 2501ms
+ ✓ Compiled in 5.2s (289 modules)
+ ✓ Compiled in 907ms (289 modules)
