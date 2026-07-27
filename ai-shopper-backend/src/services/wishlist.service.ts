@@ -1,91 +1,83 @@
-import Wishlist from "../models/wishlist.model";
+import { WishlistRepository } from "../repositories/wishlist.repository";
 import { AppError } from "../utils/AppError";
+import { AddWishlistItemDto, WishlistResultDto } from "../dto/wishlist.dto";
 
-export interface AddWishlistItemData {
-  productId: string;
-  title: string;
-  price: number;
-  thumbnail: string;
-}
+export class WishlistService {
+  constructor(private wishlistRepository: WishlistRepository) {}
 
-export interface WishlistResult {
-  products: any[];
-}
+  async getWishlist(userId: string): Promise<WishlistResultDto> {
+    let wishlist = await this.wishlistRepository.findByUserId(userId);
 
-export const getWishlist = async (userId: string): Promise<WishlistResult> => {
-  let wishlist = await Wishlist.findOne({ user: userId });
+    if (!wishlist) {
+      wishlist = await this.wishlistRepository.create({
+        user: userId,
+        products: [],
+      });
+    }
 
-  if (!wishlist) {
-    wishlist = await Wishlist.create({
-      user: userId,
-      products: [],
-    });
-  }
-
-  return { products: wishlist.products };
-};
-
-export const addToWishlist = async (
-  userId: string,
-  data: AddWishlistItemData
-): Promise<WishlistResult> => {
-  let wishlist = await Wishlist.findOne({ user: userId });
-
-  if (!wishlist) {
-    wishlist = await Wishlist.create({
-      user: userId,
-      products: [],
-    });
-  }
-
-  const exists = wishlist.products.some(
-    (item) => item.productId === data.productId
-  );
-
-  if (exists) {
     return { products: wishlist.products };
   }
 
-  wishlist.products.push({
-    productId: data.productId,
-    title: data.title,
-    price: data.price,
-    thumbnail: data.thumbnail,
-  } as any);
+  async addToWishlist(
+    userId: string,
+    data: AddWishlistItemDto
+  ): Promise<WishlistResultDto> {
+    let wishlist = await this.wishlistRepository.findByUserId(userId);
 
-  await wishlist.save();
+    if (!wishlist) {
+      wishlist = await this.wishlistRepository.create({
+        user: userId,
+        products: [],
+      });
+    }
 
-  return { products: wishlist.products };
-};
+    const exists = wishlist.products.some(
+      (item: any) => item.productId === data.productId
+    );
 
-export const removeFromWishlist = async (
-  userId: string,
-  productId: string
-): Promise<WishlistResult> => {
-  const wishlist = await Wishlist.findOne({ user: userId });
+    if (exists) {
+      return { products: wishlist.products };
+    }
 
-  if (!wishlist) {
-    throw new AppError(404, "Wishlist not found");
+    wishlist.products.push({
+      productId: data.productId,
+      title: data.title,
+      price: data.price,
+      thumbnail: data.thumbnail,
+    } as any);
+
+    await this.wishlistRepository.save(wishlist);
+
+    return { products: wishlist.products };
   }
 
-  wishlist.products = wishlist.products.filter(
-    (item) => item.productId !== productId
-  );
+  async removeFromWishlist(
+    userId: string,
+    productId: string
+  ): Promise<WishlistResultDto> {
+    const wishlist = await this.wishlistRepository.findByUserId(userId);
 
-  await wishlist.save();
+    if (!wishlist) {
+      throw new AppError(404, "Wishlist not found");
+    }
 
-  return { products: wishlist.products };
-};
+    wishlist.products = wishlist.products.filter(
+      (item: any) => item.productId !== productId
+    );
 
-export const clearWishlistByUser = async (
-  userId: string
-): Promise<WishlistResult> => {
-  const wishlist = await Wishlist.findOne({ user: userId });
+    await this.wishlistRepository.save(wishlist);
 
-  if (wishlist) {
-    wishlist.products = [];
-    await wishlist.save();
+    return { products: wishlist.products };
   }
 
-  return { products: [] };
-};
+  async clearWishlistByUser(userId: string): Promise<WishlistResultDto> {
+    const wishlist = await this.wishlistRepository.findByUserId(userId);
+
+    if (wishlist) {
+      wishlist.products = [];
+      await this.wishlistRepository.save(wishlist);
+    }
+
+    return { products: [] };
+  }
+}

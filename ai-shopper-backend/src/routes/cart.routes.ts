@@ -1,13 +1,6 @@
 import { Router } from "express";
 
-import {
-  getCartHandler,
-  addItem,
-  updateItem,
-  removeItem,
-  clearCart,
-} from "../controllers/cart.controller";
-
+import { cartController } from "../container";
 import { protect } from "../middleware/auth.middleware";
 
 const router = Router();
@@ -15,14 +8,14 @@ const router = Router();
 // All cart routes require authentication
 router.use(protect);
 
-router.get("/", getCartHandler);
+router.get("/", cartController.getCartHandler);
 
-router.post("/items", addItem);
+router.post("/items", cartController.addItem);
 
-router.patch("/items/:id", updateItem);
+router.patch("/items/:id", cartController.updateItem);
 
-router.delete("/items/:id", removeItem);
+router.delete("/items/:id", cartController.removeItem);
 
-router.delete("/", clearCart);
+router.delete("/", cartController.clearCart);
 
 export default router;

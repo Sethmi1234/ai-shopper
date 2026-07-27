@@ -1,19 +1,14 @@
 import { Router } from "express";
 import { protect } from "../middleware/auth.middleware";
-import {
-  getChatHistory,
-  getChatConversation,
-  deleteChatConversation,
-  clearChatHistory,
-} from "../controllers/chat.controller";
+import { chatController } from "../container";
 
 const router = Router();
 
 router.use(protect);
 
-router.get("/history", getChatHistory);
-router.get("/history/:id", getChatConversation);
-router.delete("/history/:id", deleteChatConversation);
-router.delete("/history", clearChatHistory);
+router.get("/history", chatController.getChatHistory);
+router.get("/history/:id", chatController.getChatConversation);
+router.delete("/history/:id", chatController.deleteChatConversation);
+router.delete("/history", chatController.clearChatHistory);
 
 export default router;

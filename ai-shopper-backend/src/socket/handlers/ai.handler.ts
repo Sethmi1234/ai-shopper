@@ -1,8 +1,6 @@
 import { Socket } from "socket.io";
 import { ConversationTurn } from "../../services/ai.service";
-import { streamShoppingAssistantResponse, clearSocketMemory, getSocketMemory } from "../../services/chatService";
-import { rateLimitCheck } from "../../services/aiRateLimit.service";
-import { getConversationHistory, listConversations, deleteConversation } from "../../services/historyService";
+import { chatService, aiRateLimitService, historyService } from "../../container";
 
 interface AiMessagePayload {
   message?: unknown;
@@ -54,7 +52,7 @@ export const handleAiChat = (socket: Socket) => {
       return;
     }
 
-    const rateLimit = rateLimitCheck(userId);
+    const rateLimit = aiRateLimitService.rateLimitCheck(userId);
     if (!rateLimit.allowed) {
       socket.emit("ai:error", {
         message: "Rate limit exceeded. Please wait a moment.",
@@ -67,7 +65,7 @@ export const handleAiChat = (socket: Socket) => {
     socket.emit("ai:typing", { isTyping: true });
 
     try {
-      const result = await streamShoppingAssistantResponse({
+      const result = await chatService.streamShoppingAssistantResponse({
         message,
         conversationHistory: normalizeConversationHistory(payload.conversationHistory),
         sessionId,
@@ -84,7 +82,7 @@ export const handleAiChat = (socket: Socket) => {
         suggestions: result.suggestions ?? [],
         sessionId: result.sessionId,
       });
-      
+
       // Emit suggested questions separately for UI convenience
       if (result.suggestions && result.suggestions.length > 0) {
         socket.emit("ai:suggestions", { suggestions: result.suggestions });
@@ -115,8 +113,8 @@ export const handleAiChat = (socket: Socket) => {
     }
 
     try {
-      const dbHistory = await getConversationHistory(userId, sessionId);
-      const history: ConversationTurn[] = dbHistory.map((m) => ({
+      const dbHistory = await historyService.getConversationHistory(userId, sessionId);
+      const history: ConversationTurn[] = dbHistory.map((m: any) => ({
         role: m.role,
         content: m.content,
       }));
@@ -144,7 +142,7 @@ export const handleAiChat = (socket: Socket) => {
     }
 
     try {
-      const conversations = await listConversations(userId);
+      const conversations = await historyService.listConversations(userId);
       socket.emit("ai:historyList", { conversations });
     } catch (error) {
       console.error("Error listing conversations:", error);
@@ -160,7 +158,7 @@ export const handleAiChat = (socket: Socket) => {
     if (!userId || !sessionId) return;
 
     try {
-      await deleteConversation(userId, sessionId);
+      await historyService.deleteConversation(userId, sessionId);
       socket.emit("ai:historyDeleted", { sessionId });
     } catch (error) {
       console.error("Error deleting conversation:", error);
@@ -169,21 +167,21 @@ export const handleAiChat = (socket: Socket) => {
 
   // Clear socket memory when starting a new conversation
   socket.on("ai:newConversation", () => {
-    clearSocketMemory(socket.id);
+    chatService.clearSocketMemory(socket.id);
     socket.emit("ai:conversationCleared");
   });
 
   // Get suggested questions based on current context
   socket.on("ai:getSuggestions", async () => {
     const userId = socket.data.user?.id;
-    
+
     if (!userId) {
       socket.emit("ai:error", { message: "Unauthorized connection." });
       return;
     }
 
     try {
-      const socketMemory = getSocketMemory(socket.id);
+      const socketMemory = chatService.getSocketMemory(socket.id);
       const lastAssistantMessage = socketMemory
         .filter((turn) => turn.role === "assistant")
         .slice(-1)[0];
@@ -219,6 +217,6 @@ export const handleAiChat = (socket: Socket) => {
   });
 
   socket.on("disconnect", () => {
-    clearSocketMemory(socket.id);
+    chatService.clearSocketMemory(socket.id);
   });
 };
