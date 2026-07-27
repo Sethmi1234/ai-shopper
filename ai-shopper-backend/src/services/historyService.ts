@@ -1,5 +1,7 @@
 import crypto from "crypto";
-import Chat, { IChatMessage } from "../models/chat.model";
+import { IChatMessage } from "../models/chat.model";
+import { ChatRepository } from "../repositories/chat.repository";
+import Chat from "../models/chat.model";
 
 export interface ConversationSummary {
   id: string;
@@ -20,122 +22,129 @@ export interface ConversationDetail {
   updatedAt: Date;
 }
 
-export const generateSessionId = (): string => crypto.randomUUID();
+export class HistoryService {
+  constructor(private chatRepository: ChatRepository) {}
 
-export const getOrCreateChat = async (
-  userId: string,
-  sessionId?: string
-): Promise<{ sessionId: string; isNew: boolean }> => {
-  if (sessionId) {
-    const existing = await Chat.findOne({ userId, sessionId });
-    if (existing) {
-      return { sessionId: existing.sessionId, isNew: false };
+  generateSessionId(): string {
+    return crypto.randomUUID();
+  }
+
+  async getOrCreateChat(
+    userId: string,
+    sessionId?: string
+  ): Promise<{ sessionId: string; isNew: boolean }> {
+    if (sessionId) {
+      const existing = await this.chatRepository.findByUserIdAndSessionId(
+        userId,
+        sessionId
+      );
+      if (existing) {
+        return { sessionId: existing.sessionId, isNew: false };
+      }
     }
+
+    const newSessionId = sessionId || this.generateSessionId();
+    await this.chatRepository.create({
+      userId,
+      sessionId: newSessionId,
+      title: "New conversation",
+      messages: [],
+    });
+
+    return { sessionId: newSessionId, isNew: true };
   }
 
-  const newSessionId = sessionId || generateSessionId();
-  await Chat.create({
-    userId,
-    sessionId: newSessionId,
-    title: "New conversation",
-    messages: [],
-  });
+  async appendMessages(
+    userId: string,
+    sessionId: string,
+    messages: Array<{ role: "user" | "assistant"; content: string }>
+  ): Promise<void> {
+    if (messages.length === 0) return;
 
-  return { sessionId: newSessionId, isNew: true };
-};
+    const chat = await this.chatRepository.findByUserIdAndSessionId(
+      userId,
+      sessionId
+    );
+    if (!chat) return;
 
-export const appendMessages = async (
-  userId: string,
-  sessionId: string,
-  messages: Array<{ role: "user" | "assistant"; content: string }>
-): Promise<void> => {
-  if (messages.length === 0) return;
+    const timestamped: IChatMessage[] = messages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+      timestamp: new Date(),
+    }));
 
-  const chat = await Chat.findOne({ userId, sessionId });
-  if (!chat) return;
+    chat.messages.push(...timestamped);
 
-  const timestamped: IChatMessage[] = messages.map((msg) => ({
-    role: msg.role,
-    content: msg.content,
-    timestamp: new Date(),
-  }));
+    const firstUserMessage = chat.messages.find((m: any) => m.role === "user");
+    if (firstUserMessage && chat.title === "New conversation") {
+      chat.title =
+        firstUserMessage.content.length > 60
+          ? `${firstUserMessage.content.slice(0, 57)}...`
+          : firstUserMessage.content;
+    }
 
-  chat.messages.push(...timestamped);
-
-  const firstUserMessage = chat.messages.find((m) => m.role === "user");
-  if (firstUserMessage && chat.title === "New conversation") {
-    chat.title =
-      firstUserMessage.content.length > 60
-        ? `${firstUserMessage.content.slice(0, 57)}...`
-        : firstUserMessage.content;
+    await this.chatRepository.save(chat);
   }
 
-  await chat.save();
-};
+  async getConversationHistory(
+    userId: string,
+    sessionId: string
+  ): Promise<IChatMessage[]> {
+    const chat = await this.chatRepository.findByUserIdAndSessionId(
+      userId,
+      sessionId
+    );
+    return chat?.messages ?? [];
+  }
 
-export const getConversationHistory = async (
-  userId: string,
-  sessionId: string
-): Promise<IChatMessage[]> => {
-  const chat = await Chat.findOne({ userId, sessionId }).lean();
-  return chat?.messages ?? [];
-};
+  async listConversations(userId: string): Promise<ConversationSummary[]> {
+    const chats = await this.chatRepository.findByUserId(userId);
 
-export const listConversations = async (
-  userId: string
-): Promise<ConversationSummary[]> => {
-  const chats = await Chat.find({ userId })
-    .sort({ updatedAt: -1 })
-    .select("sessionId title messages createdAt updatedAt")
-    .lean();
+    return chats.map((chat: any) => {
+      const lastMessage = chat.messages[chat.messages.length - 1];
+      return {
+        id: String(chat._id),
+        sessionId: chat.sessionId,
+        title: chat.title,
+        messageCount: chat.messages.length,
+        preview: lastMessage?.content?.slice(0, 100) ?? "",
+        createdAt: chat.createdAt,
+        updatedAt: chat.updatedAt,
+      };
+    });
+  }
 
-  return chats.map((chat) => {
-    const lastMessage = chat.messages[chat.messages.length - 1];
+  async getConversation(
+    userId: string,
+    id: string
+  ): Promise<ConversationDetail | null> {
+    const chat = await Chat.findOne({
+      userId,
+      $or: [{ _id: id }, { sessionId: id }],
+    }).lean();
+
+    if (!chat) return null;
+
     return {
       id: String(chat._id),
       sessionId: chat.sessionId,
       title: chat.title,
-      messageCount: chat.messages.length,
-      preview: lastMessage?.content?.slice(0, 100) ?? "",
+      messages: chat.messages,
       createdAt: chat.createdAt,
       updatedAt: chat.updatedAt,
     };
-  });
-};
+  }
 
-export const getConversation = async (
-  userId: string,
-  id: string
-): Promise<ConversationDetail | null> => {
-  const chat = await Chat.findOne({
-    userId,
-    $or: [{ _id: id }, { sessionId: id }],
-  }).lean();
+  async deleteConversation(userId: string, id: string): Promise<boolean> {
+    const result = await Chat.deleteOne({
+      userId,
+      $or: [{ _id: id }, { sessionId: id }],
+    });
+    return result.deletedCount > 0;
+  }
 
-  if (!chat) return null;
-
-  return {
-    id: String(chat._id),
-    sessionId: chat.sessionId,
-    title: chat.title,
-    messages: chat.messages,
-    createdAt: chat.createdAt,
-    updatedAt: chat.updatedAt,
-  };
-};
-
-export const deleteConversation = async (
-  userId: string,
-  id: string
-): Promise<boolean> => {
-  const result = await Chat.deleteOne({
-    userId,
-    $or: [{ _id: id }, { sessionId: id }],
-  });
-  return result.deletedCount > 0;
-};
-
-export const clearAllConversations = async (userId: string): Promise<number> => {
-  const result = await Chat.deleteMany({ userId });
-  return result.deletedCount;
-};
+  async clearAllConversations(userId: string): Promise<number> {
+    const result = await this.chatRepository.deleteManyByUserId(userId);
+    return result.deletedCount;
+  }
+}

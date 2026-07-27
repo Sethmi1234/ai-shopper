@@ -1,11 +1,5 @@
 import { Router } from "express";
-
-import {
-  createOrder,
-  getOrders,
-  getOrderByIdHandler,
-} from "../controllers/order.controller";
-
+import { orderController } from "../container";
 import { protect } from "../middleware/auth.middleware";
 
 const router = Router();
@@ -14,12 +8,12 @@ const router = Router();
 router.use(protect);
 
 // Checkout - convert cart to order
-router.post("/", createOrder);
+router.post("/", orderController.createOrder);
 
 // Get all orders for current user
-router.get("/", getOrders);
+router.get("/", orderController.getOrders);
 
 // Get single order by ID
-router.get("/:id", getOrderByIdHandler);
+router.get("/:id", orderController.getOrderByIdHandler);
 
 export default router;

@@ -1,12 +1,9 @@
 import aiClient from "../config/ai";
 import { ALLOWED_CATEGORIES } from "../lib/categories";
-import { getProducts } from "./product.service";
+import { ProductService } from "./product.service";
 
 const MODEL = process.env.NVIDIA_MODEL || "mistralai/mistral-large-3-675b-instruct-2512";
 
-/**
- * Generic AI response handler
- */
 export interface AIResponse {
   category?: string;
   confidence?: number;
@@ -37,186 +34,67 @@ export interface ConversationTurn {
   content: string;
 }
 
-export interface StreamingShoppingAssistantInput {
-  message: string;
-  conversationHistory?: ConversationTurn[];
-  onToken: (token: string) => void;
-}
+export class AiService {
+  constructor(private productService: ProductService) {}
 
-export interface StreamingShoppingAssistantResult {
-  reply: string;
-  products: Array<{
-    id: string;
-    title: string;
-    price: number;
-    category?: string;
-    thumbnail?: string;
-    rating?: number;
-    brand?: string;
-    description?: string;
-  }>;
-}
-
-/**
- * Call NVIDIA AI with a prompt - with improved error handling
- */
-export const callNvidiaAI = async ({
-  model,
-  prompt,
-  temperature = 0.3,
-  maxTokens = 512,
-}: {
-  model?: string;
-  prompt: string;
-  temperature?: number;
-  maxTokens?: number;
-}): Promise<AIResponse> => {
-  try {
-    const completion = await aiClient.chat.completions.create({
-      model: model || MODEL,
-      messages: [
-        {
-          role: "user",
-          content: prompt,
-        },
-      ],
-      temperature,
-      max_tokens: maxTokens,
-    });
-
-    const content = completion.choices[0]?.message?.content || "";
-    
-    // Try to parse JSON response
+  async callNvidiaAI({
+    model,
+    prompt,
+    temperature = 0.3,
+    maxTokens = 512,
+  }: {
+    model?: string;
+    prompt: string;
+    temperature?: number;
+    maxTokens?: number;
+  }): Promise<AIResponse> {
     try {
-      // Strip markdown code fences if present (```json ... ``` or ``` ... ```)
-      let cleaned = content.trim();
-      const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
-      if (jsonMatch) {
-        cleaned = jsonMatch[1].trim();
-      }
-      const parsed = JSON.parse(cleaned);
-      return parsed;
-    } catch {
-      // If not JSON, return as plain text in reply
-      return { reply: content };
-    }
-  } catch (error: any) {
-    console.error("NVIDIA AI call error:", error?.message || error);
-    
-    // Check for specific error types
-    if (error?.status === 429) {
-      return { error: "Rate limit exceeded. Please wait a moment.", success: false };
-    }
-    if (error?.status === 401 || error?.status === 403) {
-      return { error: "AI service authentication failed.", success: false };
-    }
-    if (error?.code === "ECONNREFUSED" || error?.code === "ENOTFOUND") {
-      return { error: "AI service is unreachable.", success: false };
-    }
-    
-    return { error: "AI request failed", success: false };
-  }
-};
+      const completion = await aiClient.chat.completions.create({
+        model: model || MODEL,
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature,
+        max_tokens: maxTokens,
+      });
 
-// This function is deprecated - use streamShoppingAssistantResponse from chatService.ts instead
-export const streamShoppingAssistantResponse = async ({
-  message,
-  conversationHistory = [],
-  onToken,
-}: StreamingShoppingAssistantInput): Promise<StreamingShoppingAssistantResult> => {
-  // This is a fallback implementation - the main implementation is in chatService.ts
-  // This is kept for backward compatibility but should not be used in new code
-  console.warn("streamShoppingAssistantResponse from ai.service.ts is deprecated. Use chatService instead.");
-  
-  try {
-    const recentHistory = conversationHistory
-      .filter((turn) => (
-        (turn.role === "user" || turn.role === "assistant") &&
-        typeof turn.content === "string" &&
-        turn.content.trim().length > 0
-      ))
-      .slice(-8);
+      const content = completion.choices[0]?.message?.content || "";
 
-    const messages: any[] = [
-      {
-        role: "system",
-        content: `You are a helpful ecommerce shopping assistant for AI Shopper.
-
-Rules:
-- Keep responses concise, friendly, and useful (2-4 sentences).
-- For greetings or general chat, respond warmly and ask what they are looking for. Do not invent products.
-- Do not output JSON.`,
-      },
-      ...recentHistory.map((turn) => ({
-        role: turn.role,
-        content: turn.content,
-      })),
-      {
-        role: "user",
-        content: message,
-      },
-    ];
-
-    let reply = "";
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 25000);
-
-    try {
-      const stream = await aiClient.chat.completions.create(
-        {
-          model: MODEL,
-          messages,
-          temperature: 0.4,
-          max_tokens: 700,
-          stream: true,
-        },
-        {
-          signal: controller.signal,
+      try {
+        let cleaned = content.trim();
+        const jsonMatch = cleaned.match(/```(?:json)?\s*([\s\S]*?)```/);
+        if (jsonMatch) {
+          cleaned = jsonMatch[1].trim();
         }
-      );
-
-      for await (const chunk of stream as any) {
-        const token = chunk.choices?.[0]?.delta?.content;
-        if (typeof token === "string" && token.length > 0) {
-          reply += token;
-          onToken(token);
-        }
+        const parsed = JSON.parse(cleaned);
+        return parsed;
+      } catch {
+        return { reply: content };
       }
-    } catch (error) {
-      console.error("AI streaming response error:", error);
+    } catch (error: any) {
+      console.error("NVIDIA AI call error:", error?.message || error);
 
-      if (!reply.trim()) {
-        reply = "I'm having trouble connecting to the AI service. Please try again in a few moments.";
-        onToken(reply);
+      if (error?.status === 429) {
+        return { error: "Rate limit exceeded. Please wait a moment.", success: false };
       }
-    } finally {
-      clearTimeout(timeout);
+      if (error?.status === 401 || error?.status === 403) {
+        return { error: "AI service authentication failed.", success: false };
+      }
+      if (error?.code === "ECONNREFUSED" || error?.code === "ENOTFOUND") {
+        return { error: "AI service is unreachable.", success: false };
+      }
+
+      return { error: "AI request failed", success: false };
     }
-
-    const finalReply = reply.trim() || "How can I help you find the right product today?";
-
-    return {
-      reply: finalReply,
-      products: [],
-    };
-  } catch (error) {
-    console.error("streamShoppingAssistantResponse error:", error);
-    return {
-      reply: "I'm having trouble connecting to the AI service. Please try again in a few moments.",
-      products: [],
-    };
   }
-};
 
-/**
- * Classify user message into product category
- */
-export const classifyIntent = async (message: string, allowedCategories: string[]): Promise<AIResponse> => {
-  const SYSTEM_PROMPT = `
+  async classifyIntent(message: string, allowedCategories: string[]): Promise<AIResponse> {
+    const SYSTEM_PROMPT = `
 You are a product intent classifier for an ecommerce shopping assistant.
-
 Your ONLY role is to classify user messages into product categories.
-
 Return ONLY valid JSON. No markdown. No explanation.
 
 # CATEGORIES ALLOWED
@@ -258,57 +136,51 @@ ${allowedCategories.filter((c) => c !== "general").join(", ")}
 - ALWAYS return valid JSON
 `;
 
-  const prompt = `${SYSTEM_PROMPT}
+    const prompt = `${SYSTEM_PROMPT}\n\nUser message: ${message}`;
 
-User message: ${message}`;
+    const response = await this.callNvidiaAI({
+      prompt,
+      temperature: 0,
+      maxTokens: 100,
+    });
 
-  const response = await callNvidiaAI({
-    prompt,
-    temperature: 0,
-    maxTokens: 100,
-  });
+    if (response.error) {
+      return { category: "general", confidence: 0.3 };
+    }
 
-  if (response.error) {
-    return { category: "general", confidence: 0.3 };
+    const category = response.category || "general";
+    const validatedCategory = ALLOWED_CATEGORIES.includes(category as any)
+      ? category
+      : "general";
+
+    return {
+      category: validatedCategory,
+      confidence: response.confidence || 0.5,
+    };
   }
 
-  const category = response.category || "general";
-  const validatedCategory = ALLOWED_CATEGORIES.includes(category as any)
-    ? category
-    : "general";
+  async filterProductsWithAI(
+    products: any[],
+    userIntent: string,
+    userMessage: string,
+    filters: any
+  ): Promise<AIResponse> {
+    const productSummaries = products
+      .slice(0, 30)
+      .map((p: any) => ({
+        id: p._id ? String(p._id) : String(p.id),
+        title: p.title,
+        category: p.category,
+        price: p.price,
+        description: p.description ? p.description.substring(0, 120) : "",
+        brand: p.brand || "",
+        tags: p.tags || [],
+      }));
 
-  return {
-    category: validatedCategory,
-    confidence: response.confidence || 0.5,
-  };
-};
+    const filtersStr = JSON.stringify(filters || {});
 
-/**
- * Filter products based on AI analysis
- */
-export const filterProductsWithAI = async (
-  products: any[],
-  userIntent: string,
-  userMessage: string,
-  filters: any
-): Promise<AIResponse> => {
-  const productSummaries = products
-    .slice(0, 30)
-    .map((p: any) => ({
-      id: p._id ? String(p._id) : String(p.id),
-      title: p.title,
-      category: p.category,
-      price: p.price,
-      description: p.description ? p.description.substring(0, 120) : "",
-      brand: p.brand || "",
-      tags: p.tags || [],
-    }));
-
-  const filtersStr = JSON.stringify(filters || {});
-
-  const prompt = `
+    const prompt = `
 You are a product relevance filter for an ecommerce AI shopping assistant.
-
 A customer said: "${userMessage}"
 Their intent: "${userIntent}"
 Filters extracted: ${filtersStr}
@@ -344,50 +216,43 @@ Rules:
 - NEVER invent IDs not in the list
 `;
 
-  const aiResult = await callNvidiaAI({
-    prompt,
-    temperature: 0.2,
-    maxTokens: 512,
-  });
+    const aiResult = await this.callNvidiaAI({
+      prompt,
+      temperature: 0.2,
+      maxTokens: 512,
+    });
 
-  if (aiResult.error || !Array.isArray(aiResult.filteredIds)) {
+    if (aiResult.error || !Array.isArray(aiResult.filteredIds)) {
+      return {
+        filteredIds: products.slice(0, 4).map((p: any) => String(p._id || p.id)),
+        fallback: true,
+      };
+    }
+
+    const validIds = new Set(products.map((p: any) => String(p._id || p.id)));
+    const safeIds = (aiResult.filteredIds as string[])
+      .filter((id: any) => typeof id === "string" && validIds.has(id))
+      .slice(0, 6);
+
     return {
-      filteredIds: products.slice(0, 4).map((p: any) => String(p._id || p.id)),
-      fallback: true,
+      filteredIds: safeIds,
+      reasoning: aiResult.reasoning || "",
     };
   }
 
-  const validIds = new Set(products.map((p: any) => String(p._id || p.id)));
-  const safeIds = (aiResult.filteredIds as string[])
-    .filter((id: any) => typeof id === "string" && validIds.has(id))
-    .slice(0, 6);
+  async recommendProducts(message: string, conversationHistory: any[]): Promise<any> {
+    const conversationStr = Array.isArray(conversationHistory)
+      ? conversationHistory
+          .slice(-10)
+          .map((m: any) => `${m.role === "user" ? "Customer" : "Assistant"}: ${m.content}`)
+          .join("\n")
+      : "";
 
-  return {
-    filteredIds: safeIds,
-    reasoning: aiResult.reasoning || "",
-  };
-};
+    const fullConversation = conversationStr
+      ? `${conversationStr}\nCustomer: ${message}`
+      : `Customer: ${message}`;
 
-/**
- * Full AI recommendation pipeline (intent classification + product filtering)
- */
-export const recommendProducts = async (
-  message: string,
-  conversationHistory: any[]
-): Promise<any> => {
-  // Build conversation string for prompt
-  const conversationStr = Array.isArray(conversationHistory)
-    ? conversationHistory
-        .slice(-10)
-        .map((m: any) => `${m.role === "user" ? "Customer" : "Assistant"}: ${m.content}`)
-        .join("\n")
-    : "";
-
-  const fullConversation = conversationStr
-    ? `${conversationStr}\nCustomer: ${message}`
-    : `Customer: ${message}`;
-
-  const SYSTEM_PROMPT = `
+    const SYSTEM_PROMPT = `
 You are an intelligent ecommerce shopping assistant. Your job is to help users find products from our catalog.
 
 # YOUR ROLE
@@ -432,139 +297,124 @@ Return ONLY valid JSON. No markdown. No explanation.
 - Return ONLY valid JSON
 `;
 
-  const prompt = `${SYSTEM_PROMPT}
+    const prompt = `${SYSTEM_PROMPT}\n\n${fullConversation}`;
 
-${fullConversation}`;
+    const aiIntent = await this.callNvidiaAI({
+      prompt,
+      temperature: 0.4,
+      maxTokens: 512,
+    });
 
-  // Call AI for intent classification
-  const aiIntent = await callNvidiaAI({
-    prompt,
-    temperature: 0.4,
-    maxTokens: 512,
-  });
+    if (aiIntent.error || aiIntent.success === false) {
+      return {
+        data: {
+          intent: "product_search",
+          requiresApiCall: false,
+          needsMoreInformation: false,
+          missingInformation: [],
+          filters: {},
+          reply: "I'm having a moment — please try again!",
+          products: [],
+          confidenceScore: 0,
+        },
+      };
+    }
 
-  if (aiIntent.error || aiIntent.success === false) {
-    return {
-      data: {
-        intent: "product_search",
-        requiresApiCall: false,
-        needsMoreInformation: false,
-        missingInformation: [],
-        filters: {},
-        reply: "I'm having a moment — please try again!",
-        products: [],
-        confidenceScore: 0,
-      },
-    };
-  }
+    const intent = aiIntent.intent || "product_search";
+    const requiresApiCall = Boolean(aiIntent.requiresApiCall) && !Boolean(aiIntent.needsMoreInformation);
+    const needsMoreInformation = Boolean(aiIntent.needsMoreInformation);
+    const filters = aiIntent.filters || {};
+    const reply = typeof aiIntent.reply === "string" && aiIntent.reply.trim()
+      ? aiIntent.reply.trim()
+      : "How can I help you find the right product?";
 
-  const intent = aiIntent.intent || "product_search";
-  const requiresApiCall = Boolean(aiIntent.requiresApiCall) && !Boolean(aiIntent.needsMoreInformation);
-  const needsMoreInformation = Boolean(aiIntent.needsMoreInformation);
-  const filters = aiIntent.filters || {};
-  const reply = typeof aiIntent.reply === "string" && aiIntent.reply.trim()
-    ? aiIntent.reply.trim()
-    : "How can I help you find the right product?";
+    if (!requiresApiCall && !needsMoreInformation) {
+      return {
+        data: {
+          intent,
+          requiresApiCall: false,
+          needsMoreInformation: false,
+          missingInformation: [],
+          filters,
+          reply,
+          products: [],
+          confidenceScore: aiIntent.confidenceScore || 70,
+        },
+      };
+    }
 
-  // For the home page "Ask AI" feature: always attempt a product search.
-  if (!requiresApiCall && !needsMoreInformation) {
+    let rawProducts: any[] = [];
+    try {
+      const query: { page: number; limit: number; category?: string } = {
+        page: 1,
+        limit: 50,
+      };
+      if (filters.category) {
+        query.category = filters.category;
+      }
+
+      const result = await this.productService.getProducts(query);
+      rawProducts = result.data;
+
+      if (filters.minPrice || filters.maxPrice) {
+        rawProducts = rawProducts.filter((p: any) => {
+          const price = Number(p.price);
+          if (filters.minPrice && price < filters.minPrice) return false;
+          if (filters.maxPrice && price > filters.maxPrice) return false;
+          return true;
+        });
+      }
+    } catch (err) {
+      console.error("Product fetch error:", err);
+    }
+
+    let finalProducts: any[] = [];
+    if (rawProducts.length > 0) {
+      try {
+        const filterData = await this.filterProductsWithAI(rawProducts, intent, message, filters);
+        const filteredIds: string[] = (filterData.filteredIds || []) as string[];
+
+        if (filteredIds.length > 0) {
+          finalProducts = filteredIds
+            .map((id) => rawProducts.find((p: any) => String(p._id || p.id) === id))
+            .filter(Boolean);
+        }
+      } catch (err) {
+        console.error("AI filter step error:", err);
+      }
+
+      if (finalProducts.length === 0) {
+        finalProducts = rawProducts.slice(0, 4);
+      }
+    }
+
     return {
       data: {
         intent,
-        requiresApiCall: false,
+        requiresApiCall,
         needsMoreInformation: false,
         missingInformation: [],
         filters,
-        reply,
-        products: [],
-        confidenceScore: aiIntent.confidenceScore || 70,
+        reply: finalProducts.length === 0
+          ? `${reply} Unfortunately I couldn't find matching products right now — try adjusting your search.`
+          : reply,
+        products: finalProducts.map((p: any) => ({
+          id: String(p._id || p.id),
+          title: p.title,
+          price: p.price,
+          category: p.category,
+          thumbnail: p.thumbnail,
+          rating: p.rating,
+          brand: p.brand,
+          description: p.description ? p.description.substring(0, 100) : "",
+        })),
+        confidenceScore: aiIntent.confidenceScore || 80,
       },
     };
   }
 
-  // Fetch products from our own database using filters
-  let rawProducts: any[] = [];
-  try {
-    const query: { page: number; limit: number; category?: string } = {
-      page: 1,
-      limit: 50,
-    };
-    if (filters.category) {
-      query.category = filters.category;
-    }
-
-    const result = await getProducts(query);
-    rawProducts = result.data;
-
-    // Apply price filters in memory (DB doesn't have a price range index yet)
-    if (filters.minPrice || filters.maxPrice) {
-      rawProducts = rawProducts.filter((p: any) => {
-        const price = Number(p.price);
-        if (filters.minPrice && price < filters.minPrice) return false;
-        if (filters.maxPrice && price > filters.maxPrice) return false;
-        return true;
-      });
-    }
-  } catch (err) {
-    console.error("Product fetch error:", err);
-  }
-
-  // AI filter the products
-  let finalProducts: any[] = [];
-  if (rawProducts.length > 0) {
-    try {
-      const filterData = await filterProductsWithAI(rawProducts, intent, message, filters);
-      const filteredIds: string[] = (filterData.filteredIds || []) as string[];
-
-      if (filteredIds.length > 0) {
-        finalProducts = filteredIds
-          .map((id) => rawProducts.find((p: any) => String(p._id || p.id) === id))
-          .filter(Boolean);
-      }
-    } catch (err) {
-      console.error("AI filter step error:", err);
-    }
-
-    // Fallback: if AI filter returned nothing, use top 4 raw products
-    if (finalProducts.length === 0) {
-      finalProducts = rawProducts.slice(0, 4);
-    }
-  }
-
-  return {
-    data: {
-      intent,
-      requiresApiCall,
-      needsMoreInformation: false,
-      missingInformation: [],
-      filters,
-      reply: finalProducts.length === 0
-        ? `${reply} Unfortunately I couldn't find matching products right now — try adjusting your search.`
-        : reply,
-      products: finalProducts.map((p: any) => ({
-        id: String(p._id || p.id),
-        title: p.title,
-        price: p.price,
-        category: p.category,
-        thumbnail: p.thumbnail,
-        rating: p.rating,
-        brand: p.brand,
-        description: p.description ? p.description.substring(0, 100) : "",
-      })),
-      confidenceScore: aiIntent.confidenceScore || 80,
-    },
-  };
-};
-
-/**
- * Smart recommendation with clarification
- */
-export const smartRecommend = async (
-  prompt: string,
-  conversation: string,
-  allProducts: any[]
-): Promise<AIResponse> => {
-  const SYSTEM_PROMPT = `
+  async smartRecommend(prompt: string, conversation: string, allProducts: any[]): Promise<AIResponse> {
+    const SYSTEM_PROMPT = `
 You are an intelligent ecommerce shopping assistant. Your job is to help users find products from our catalog.
 
 You have access to ALL products across ALL categories. You understand natural language deeply — intent, context, nuance, and ambiguity.
@@ -623,115 +473,94 @@ If the user's request is unclear or could mean multiple things:
 - Return ONLY valid JSON. No markdown. No extra text.
 `;
 
-  const conversationContext = conversation
-    ? `\n\nPrevious conversation context:\n${conversation}`
-    : "";
+    const conversationContext = conversation
+      ? `\n\nPrevious conversation context:\n${conversation}`
+      : "";
 
-  const aiPrompt = `${SYSTEM_PROMPT}
+    const aiPrompt = `${SYSTEM_PROMPT}\n\nUser Request:\n${prompt}${conversationContext}\n\nAvailable Products (ALL categories):\n${JSON.stringify(
+      allProducts.map((p: any) => ({
+        id: p.id,
+        title: p.title,
+        price: p.price,
+        description: p.description?.substring(0, 150),
+        category: p.category,
+        brand: p.brand || "",
+        rating: p.rating || 0,
+      })),
+      null,
+      2
+    )}\n\nNow analyze the user's request against ALL these products. \n- If the request is ambiguous, ask a clarifying question.\n- If clear, return the best matching products with scores and reasons.\n- Remember: you can match across ANY category, not just one.\nReturn ONLY valid JSON.`;
 
-User Request:
-${prompt}${conversationContext}
+    const response = await this.callNvidiaAI({
+      prompt: aiPrompt,
+      temperature: 0.3,
+      maxTokens: 4096,
+    });
 
-Available Products (ALL categories):
-${JSON.stringify(
-  allProducts.map((p: any) => ({
-    id: p.id,
-    title: p.title,
-    price: p.price,
-    description: p.description?.substring(0, 150),
-    category: p.category,
-    brand: p.brand || "",
-    rating: p.rating || 0,
-  })),
-  null,
-  2
-)}
-
-Now analyze the user's request against ALL these products. 
-- If the request is ambiguous, ask a clarifying question.
-- If clear, return the best matching products with scores and reasons.
-- Remember: you can match across ANY category, not just one.
-Return ONLY valid JSON.`;
-
-  const response = await callNvidiaAI({
-    prompt: aiPrompt,
-    temperature: 0.3,
-    maxTokens: 4096,
-  });
-
-  if (response.error) {
-    return {
-      needsClarification: false,
-      reply: "Here are our top-rated products. The AI recommendation engine is temporarily unavailable.",
-      products: [...allProducts]
-        .sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0))
-        .slice(0, 12),
-    };
-  }
-
-  return response;
-};
-
-/**
- * Smart recommend handler - fetches products and processes recommendation
- */
-export const smartRecommendWithProducts = async (
-  prompt: string,
-  conversation: string
-): Promise<any> => {
-  // Fetch all products from our own database (no DummyJSON dependency)
-  const result = await getProducts({ page: 1, limit: 200 });
-  const allProducts = result.data;
-
-  if (allProducts.length === 0) {
-    return {
-      needsClarification: false,
-      reply: "I'm having trouble accessing the product catalog right now. Please try again later.",
-      products: [],
-    };
-  }
-
-  const aiResult = await smartRecommend(prompt.trim(), conversation || "", allProducts);
-
-  // Handle clarification response
-  if (aiResult.needsClarification) {
-    return {
-      needsClarification: true,
-      clarificationQuestion: aiResult.clarificationQuestion || "Could you tell me more about what you're looking for?",
-      clarificationOptions: aiResult.clarificationOptions || [],
-      reply: aiResult.reply || "",
-      products: [],
-    };
-  }
-
-  // Validate matches and map back to full product data
-  const matches = aiResult.matches || [];
-  const validatedMatches = matches
-    .filter((m: any) => (typeof m.id === "number" || typeof m.id === "string") && m.score >= 0.7)
-    .map((m: any) => ({
-      id: m.id,
-      score: typeof m.score === "number" ? Math.max(0, Math.min(1, m.score)) : 0.5,
-      reason: typeof m.reason === "string" ? m.reason : "",
-    }));
-
-  // Map AI-selected IDs back to full product objects
-  const selectedIds = new Set(validatedMatches.map((m: any) => String(m.id)));
-  const matchedProducts = allProducts
-    .filter((p: any) => selectedIds.has(String(p._id || p.id)))
-    .map((p: any) => {
-      const match = validatedMatches.find((m: any) => String(m.id) === String(p._id || p.id));
+    if (response.error) {
       return {
-        ...p,
-        id: String(p._id || p.id),
-        aiScore: match?.score || 0.5,
-        aiReason: match?.reason || "",
+        needsClarification: false,
+        reply: "Here are our top-rated products. The AI recommendation engine is temporarily unavailable.",
+        products: [...allProducts]
+          .sort((a: any, b: any) => (b.rating || 0) - (a.rating || 0))
+          .slice(0, 12),
       };
-    })
-    .sort((a: any, b: any) => (b.aiScore || 0) - (a.aiScore || 0));
+    }
 
-  return {
-    needsClarification: false,
-    reply: aiResult.reply || `Found ${matchedProducts.length} products that match your request!`,
-    products: matchedProducts,
-  };
-};
+    return response;
+  }
+
+  async smartRecommendWithProducts(prompt: string, conversation: string): Promise<any> {
+    const result = await this.productService.getProducts({ page: 1, limit: 200 });
+    const allProducts = result.data;
+
+    if (allProducts.length === 0) {
+      return {
+        needsClarification: false,
+        reply: "I'm having trouble accessing the product catalog right now. Please try again later.",
+        products: [],
+      };
+    }
+
+    const aiResult = await this.smartRecommend(prompt.trim(), conversation || "", allProducts);
+
+    if (aiResult.needsClarification) {
+      return {
+        needsClarification: true,
+        clarificationQuestion: aiResult.clarificationQuestion || "Could you tell me more about what you're looking for?",
+        clarificationOptions: aiResult.clarificationOptions || [],
+        reply: aiResult.reply || "",
+        products: [],
+      };
+    }
+
+    const matches = aiResult.matches || [];
+    const validatedMatches = matches
+      .filter((m: any) => (typeof m.id === "number" || typeof m.id === "string") && m.score >= 0.7)
+      .map((m: any) => ({
+        id: m.id,
+        score: typeof m.score === "number" ? Math.max(0, Math.min(1, m.score)) : 0.5,
+        reason: typeof m.reason === "string" ? m.reason : "",
+      }));
+
+    const selectedIds = new Set(validatedMatches.map((m: any) => String(m.id)));
+    const matchedProducts = allProducts
+      .filter((p: any) => selectedIds.has(String(p._id || p.id)))
+      .map((p: any) => {
+        const match = validatedMatches.find((m: any) => String(m.id) === String(p._id || p.id));
+        return {
+          ...p,
+          id: String(p._id || p.id),
+          aiScore: match?.score || 0.5,
+          aiReason: match?.reason || "",
+        };
+      })
+      .sort((a: any, b: any) => (b.aiScore || 0) - (a.aiScore || 0));
+
+    return {
+      needsClarification: false,
+      reply: aiResult.reply || `Found ${matchedProducts.length} products that match your request!`,
+      products: matchedProducts,
+    };
+  }
+}
